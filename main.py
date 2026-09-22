@@ -1,35 +1,32 @@
-import mediapipe as mp 
-from mediapipe.tasks import python 
-from mediapipe.tasks.python import vision #funzionalità per computier vision
+from src.mp_detector import detect_pose
 
-MODEL_PATH = "models/pose_landmarker_full.task"  #percorso modello
-IMAGE_PATH = "images/test_1.jpeg"    #percorso immagine
 
-#configurazione del modello BaseOption 
-base_options = python.BaseOptions(
-    model_asset_path=MODEL_PATH
-) 
+MODEL_PATH = "models/pose_landmarker_full.task"
+IMAGE_PATH = "images/test_1.jpeg"
 
-#configurazione del modello PoseLandmarkerOptions con base e immagine
-options = vision.PoseLandmarkerOptions(
-    base_options = base_options,
-    running_mode = vision.RunningMode.IMAGE
+
+# Analizziamo l'immagine con MediaPipe
+landmarks = detect_pose(
+    IMAGE_PATH,
+    MODEL_PATH
 )
 
-# apertura e trasformazione dell'immagine in un oggetto mediapipe
-image = mp.Image.create_from_file(IMAGE_PATH)
 
-# creazione di un landmarker in questo blocco 
-with vision.PoseLandmarker.create_from_options(options) as landmarker:
+# Controlliamo se MediaPipe ha trovato una posa
+if not landmarks:
 
-    result = landmarker.detect(image)
-
-# se sono stati creati dei landmarker
-if result.pose_landmarks:
-    print("persona rilevata")
-    landmarks = result.pose_landmarks[0]
-    print("Numero landmark:", len(landmarks)) #numero landmarker trovati
+    print("Nessuna posa rilevata")
 
 else:
 
-    print("Nessuna persona rilevata")
+    print("Posa rilevata!\n")
+
+    # Stampiamo i landmark rilevati
+    for nome, dati in landmarks.items():
+
+        print(
+            f"{nome}: "
+            f"X = {dati['x']:.1f} px, "
+            f"Y = {dati['y']:.1f} px, "
+            f"visibility = {dati['visibility']:.3f}"
+        )
