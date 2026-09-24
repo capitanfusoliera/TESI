@@ -1,1 +1,0 @@
-#si occupa di rilevare i marker aruco e restituire le coordinate dei marker rilevati

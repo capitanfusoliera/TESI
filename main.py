@@ -1,9 +1,9 @@
 from src.mp_detector import detect_pose
+from src.marker_detector import detect_markers
 
 
 MODEL_PATH = "models/pose_landmarker_full.task"
-IMAGE_PATH = "images/test_1.jpeg"
-
+IMAGE_PATH = "images/test_7.jpeg"
 
 # Analizziamo l'immagine con MediaPipe
 landmarks = detect_pose(
@@ -11,6 +11,26 @@ landmarks = detect_pose(
     MODEL_PATH
 )
 
+markers = detect_markers(
+    IMAGE_PATH
+)
+
+if not markers:
+
+    print("No red markers detected")
+
+else:
+
+    print(f"Detected markers: {len(markers)}\n")
+
+    for marker_id, marker in enumerate(markers):
+
+        print(
+            f"Marker {marker_id}: "
+            f"X = {marker['x']:.1f} px | "
+            f"Y = {marker['y']:.1f} px | "
+            f"area = {marker['area']:.1f} px²"
+        )
 
 # Controlliamo se MediaPipe ha trovato una posa
 if not landmarks:
