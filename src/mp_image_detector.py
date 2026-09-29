@@ -33,7 +33,7 @@ LANDMARK_NAMES = {
 }
 
 
-def detect_pose(image_path, model_path):
+def detect_pose_image(image_path, model_path):
 
     # Configurazione base del modello
     base_options = python.BaseOptions(

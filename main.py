@@ -1,19 +1,18 @@
-from src.mp_detector import detect_pose
-from src.marker_detector import detect_markers
-
+from src.mp_image_detector import detect_pose_image
+from src.marker_image_detector import detect_markers_image
+from src.marker_video_detector import detect_markers_frame
 
 MODEL_PATH = "models/pose_landmarker_full.task"
-IMAGE_PATH = "images/test_7.jpeg"
+IMAGE_PATH = "images/test_9.jpeg"
+VIDEO_PATH = "videos/marker_squat_1.mp4"
 
 # Analizziamo l'immagine con MediaPipe
-landmarks = detect_pose(
+landmarks = detect_pose_image(
     IMAGE_PATH,
     MODEL_PATH
 )
-
-markers = detect_markers(
-    IMAGE_PATH
-)
+markers = 0
+#markers = detect_markers_image(IMAGE_PATH)
 
 if not markers:
 
@@ -50,3 +49,10 @@ else:
             f"Y = {dati['y']:.1f} px, "
             f"visibility = {dati['visibility']:.3f}"
         )
+
+video_results = detect_markers_frame(VIDEO_PATH)
+
+print(
+    f"\nAnalyzed frames: "
+    f"{len(video_results)}"
+)
