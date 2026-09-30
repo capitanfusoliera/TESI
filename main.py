@@ -1,58 +1,118 @@
 from src.mp_image_detector import detect_pose_image
 from src.marker_image_detector import detect_markers_image
-from src.marker_video_detector import detect_markers_frame
+
+from src.marker_video_detector import detect_markers_video
+from src.mp_video_detector import detect_pose_video
+
+from src.video_comparison import compare_video_results
+
+
+MODE = "comparison_video"
+
+INITIAL_MARKER_MAP = {
+    0: "caviglia_destra",
+    1: "ginocchio_destro",
+    2: "anca_destra",
+    5: "spalla_destra"
+}
 
 MODEL_PATH = "models/pose_landmarker_full.task"
+
 IMAGE_PATH = "images/test_9.jpeg"
-VIDEO_PATH = "videos/marker_squat_1.mp4"
 
-# Analizziamo l'immagine con MediaPipe
-landmarks = detect_pose_image(
-    IMAGE_PATH,
-    MODEL_PATH
-)
-markers = 0
-#markers = detect_markers_image(IMAGE_PATH)
+VIDEO_PATH = "videos/marker_squat_2.mp4"
 
-if not markers:
 
-    print("No red markers detected")
+INITIAL_MARKER_MAP = {
+    # ESEMPIO:
+    # 0: "ginocchio_sinistro",
+    # 1: "anca_sinistra",
+    # 2: "caviglia_sinistra",
+}
 
-else:
 
-    print(f"Detected markers: {len(markers)}\n")
+if MODE == "image":
 
-    for marker_id, marker in enumerate(markers):
+    landmarks = detect_pose_image(
+        IMAGE_PATH,
+        MODEL_PATH
+    )
+
+    markers = detect_markers_image(
+        IMAGE_PATH
+    )
+
+    print(
+        f"\nDetected markers: {len(markers)}"
+    )
+
+    print(
+        f"Detected landmarks: {len(landmarks)}"
+    )
+
+
+elif MODE == "marker_video":
+
+    marker_results = detect_markers_video(
+        VIDEO_PATH,
+        INITIAL_MARKER_MAP,
+        target_fps=30,
+        show_video=True
+    )
+
+    print(
+        f"\nMarker frames analyzed: "
+        f"{len(marker_results)}"
+    )
+
+
+elif MODE == "comparison_video":
+
+    print(
+        "\n--- MARKER ANALYSIS ---\n"
+    )
+
+    marker_results = detect_markers_video(
+        VIDEO_PATH,
+        INITIAL_MARKER_MAP,
+        target_fps=30,
+        show_video=True
+    )
+
+    print(
+        "\n--- MEDIAPIPE ANALYSIS ---\n"
+    )
+
+    mediapipe_results = detect_pose_video(
+        VIDEO_PATH,
+        MODEL_PATH,
+        target_fps=30
+    )
+
+    print(
+        f"\nMarker frames: "
+        f"{len(marker_results)}"
+    )
+
+    print(
+        f"MediaPipe frames: "
+        f"{len(mediapipe_results)}"
+    )
+
+    if len(marker_results) != len(mediapipe_results):
 
         print(
-            f"Marker {marker_id}: "
-            f"X = {marker['x']:.1f} px | "
-            f"Y = {marker['y']:.1f} px | "
-            f"area = {marker['area']:.1f} px²"
+            "WARNING: different number "
+            "of analyzed frames"
         )
 
-# Controlliamo se MediaPipe ha trovato una posa
-if not landmarks:
+    comparisons = compare_video_results(
+        marker_results,
+        mediapipe_results,
+        csv_path="comparison_results.csv"
+    )
 
-    print("Nessuna posa rilevata")
-
-else:
-
-    print("Posa rilevata!\n")
-
-    # Stampiamo i landmark rilevati
-    for nome, dati in landmarks.items():
-
-        print(
-            f"{nome}: "
-            f"X = {dati['x']:.1f} px, "
-            f"Y = {dati['y']:.1f} px, "
-            f"visibility = {dati['visibility']:.3f}"
-        )
-
-video_results = detect_markers_frame(VIDEO_PATH)
-
-print(
-    f"\nAnalyzed frames: "
-    f"{len(video_results)}"
-)
+    print(
+        f"\nValid comparisons: "
+        f"{len(comparisons)}"
+    )

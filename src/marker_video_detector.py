@@ -1,148 +1,178 @@
-# Handles marker detection in images and individual video frames
-
 import cv2
-import numpy as np
+
+from src.marker_image_detector import detect_markers_frame
 
 
-# HSV range for magenta markers
-LOWER_MAGENTA = np.array([135, 70, 90])
-UPPER_MAGENTA = np.array([175, 255, 255])
-
-# Marker area limits
-MIN_AREA = 20
-MAX_AREA = 1000
-
-# Scale used only for visualization
-DISPLAY_SCALE = 0.4
+DISPLAY_SCALE = 1
 
 
-def detect_markers_frame(frame):
+def detect_markers_video(
+    video_path,
+    initial_marker_map,
+    target_fps=30,
+    show_video=True
+):
 
-    # Convert BGR frame to HSV
-    hsv_image = cv2.cvtColor(frame,cv2.COLOR_BGR2HSV)
+    # Open video
+    video = cv2.VideoCapture(video_path)
 
-    # Create marker mask
-    marker_mask = cv2.inRange(hsv_image,LOWER_MAGENTA,UPPER_MAGENTA)
-
-    # Find contours of magenta regions
-    contours, _ = cv2.findContours(
-        marker_mask,
-        cv2.RETR_EXTERNAL,
-        cv2.CHAIN_APPROX_SIMPLE
-    )
-
-    markers = []
-
-    for contour in contours:
-
-        # Calculate contour area
-        area = cv2.contourArea(contour)
-
-        # Ignore regions outside the expected marker size
-        if area < MIN_AREA or area > MAX_AREA:
-            continue
-
-        # Calculate geometric moments
-        moments = cv2.moments(contour)
-
-        if moments["m00"] == 0:
-            continue
-
-        # Calculate marker center
-        center_x = moments["m10"] / moments["m00"]
-        center_y = moments["m01"] / moments["m00"]
-
-        markers.append({
-            "x": center_x,
-            "y": center_y,
-            "area": area
-        })
-
-    return markers, marker_mask
-
-
-def detect_markers_image(image_path):
-
-    # Load image
-    image = cv2.imread(image_path)
-
-    if image is None:
+    if not video.isOpened():
         raise FileNotFoundError(
-            f"Image not found: {image_path}"
+            f"Video not found or cannot be opened: {video_path}"
         )
 
-    # Detect markers
-    markers, marker_mask = detect_markers_frame(
-        image
+    # Read video information
+    source_fps = video.get(
+        cv2.CAP_PROP_FPS
     )
 
-    # Create debug image
-    debug_image = image.copy()
+    total_frames = int(
+        video.get(cv2.CAP_PROP_FRAME_COUNT)
+    )
 
-    for marker_id, marker in enumerate(markers):
+    width = int(
+        video.get(cv2.CAP_PROP_FRAME_WIDTH)
+    )
 
-        x = int(marker["x"])
-        y = int(marker["y"])
+    height = int(
+        video.get(cv2.CAP_PROP_FRAME_HEIGHT)
+    )
 
-        cv2.circle(
-            debug_image,
-            (x, y),
-            8,
-            (0, 255, 0),
-            2
+    print(f"Video resolution: {width} x {height}")
+    print(f"Original FPS: {source_fps:.2f}")
+    print(f"Total frames: {total_frames}")
+
+    # Example:
+    # 60 FPS / 30 FPS = analyze one frame every 2 frames
+    frame_step = max(
+        1,
+        round(source_fps / target_fps)
+    )
+
+    analysis_fps = source_fps / frame_step
+
+    print(f"Frame step: {frame_step}")
+    print(f"Analysis FPS: {analysis_fps:.2f}\n")
+
+    results = []
+
+    frame_index = 0
+
+    while True:
+
+        success, frame = video.read()
+
+        # End of video
+        if not success:
+            break
+
+        # Analyze only selected frames
+        if frame_index % frame_step == 0:
+
+            # Timestamp relative to the ORIGINAL video
+            timestamp_ms = (
+                frame_index * 1000.0 / source_fps
+            )
+
+            # Analyze this single frame
+            markers, marker_mask = detect_markers_frame(
+                frame
+            )
+
+            results.append({
+                "frame": frame_index,
+                "time_ms": timestamp_ms,
+                "markers": markers
+            })
+
+            print(
+                f"Frame {frame_index} | "
+                f"{timestamp_ms:.1f} ms | "
+                f"Markers detected: {len(markers)}"
+            )
+
+            if show_video:
+
+                debug_frame = frame.copy()
+
+                for marker_id, marker in enumerate(markers):
+
+                    x = int(marker["x"])
+                    y = int(marker["y"])
+
+                    cv2.circle(
+                        debug_frame,
+                        (x, y),
+                        12,
+                        (0, 255, 0),
+                        3
+                    )
+
+                    cv2.putText(
+                        debug_frame,
+                        str(marker_id),
+                        (x + 15, y),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        1,
+                        (0, 255, 0),
+                        2
+                    )
+
+                cv2.putText(
+                    debug_frame,
+                    f"Frame: {frame_index}",
+                    (50, 80),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    1.5,
+                    (0, 255, 0),
+                    3
+                )
+
+                display_frame = cv2.resize(
+                    debug_frame,
+                    None,
+                    fx=DISPLAY_SCALE,
+                    fy=DISPLAY_SCALE,
+                    interpolation=cv2.INTER_AREA
+                )
+
+                cv2.imshow(
+                    "Marker video analysis",
+                    display_frame
+                )
+
+                # Stop on the first analyzed frame
+                if frame_index == 0:
+
+                    print(
+                        "\nFirst frame paused."
+                        "\nLook at the marker IDs."
+                        "\nPress any key to continue.\n"
+                    )
+
+                    cv2.waitKey(0)
+
+                else:
+
+                    # Slow playback
+                    if cv2.waitKey(100) & 0xFF == ord("q"):
+                        break
+
+        frame_index += 1
+
+    if show_video:
+
+        print(
+            "\nVideo finished."
+            "\nPress any key to close the window."
         )
 
-        cv2.putText(
-            debug_image,
-            str(marker_id),
-            (x + 10, y),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.7,
-            (0, 255, 0),
-            2
-        )
+        cv2.waitKey(0)
 
-    # Resize only for visualization
-    display_image = cv2.resize(
-        image,
-        None,
-        fx=DISPLAY_SCALE,
-        fy=DISPLAY_SCALE,
-        interpolation=cv2.INTER_AREA
-    )
 
-    display_mask = cv2.resize(
-        marker_mask,
-        None,
-        fx=DISPLAY_SCALE,
-        fy=DISPLAY_SCALE,
-        interpolation=cv2.INTER_NEAREST
-    )
-
-    display_debug_image = cv2.resize(
-        debug_image,
-        None,
-        fx=DISPLAY_SCALE,
-        fy=DISPLAY_SCALE,
-        interpolation=cv2.INTER_AREA
-    )
-
-    cv2.imshow(
-        "Original image",
-        display_image
-    )
-
-    cv2.imshow(
-        "Marker mask",
-        display_mask
-    )
-
-    cv2.imshow(
-        "Detected markers",
-        display_debug_image
-    )
-
-    cv2.waitKey(0)
+    video.release()
     cv2.destroyAllWindows()
 
-    return markers
+    return results
+
+    return results
