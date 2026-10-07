@@ -1,11 +1,10 @@
-from src.mp_image_detector import detect_pose_image
+from src.mediapipe.mp_image_detector import detect_pose_image
+from src.validation.marker_image_detector import detect_markers_image
 
-from src.marker_image_detector import detect_markers_image
+from src.validation.marker_video_detector import detect_markers_video
+from src.mediapipe.mp_video_detector import detect_pose_video
 
-from src.marker_video_detector import detect_markers_video
-from src.mp_video_detector import detect_pose_video
-
-#from src.video_comparison import compare_video_results
+from src.validation.video_comparison import create_validation_outputs
 
 
 MODE = "comparison_video"
@@ -35,6 +34,8 @@ if MODE == "image":
     print(
         f"Detected landmarks: {len(landmarks)}"
     )
+
+
 elif MODE == "comparison_video":
 
     print(
@@ -43,13 +44,7 @@ elif MODE == "comparison_video":
 
     marker_results = detect_markers_video(
         VIDEO_PATH,
-        target_fps=30,
-        show_video=True,
-        txt_path="outputs/marker_output.txt",
-        output_video_path=(
-            "outputs/marker_analysis_slow.mp4"
-        ),
-        slow_video_fps=10
+        target_fps=30
     )
 
     print(
@@ -59,8 +54,18 @@ elif MODE == "comparison_video":
     mediapipe_results = detect_pose_video(
         VIDEO_PATH,
         MODEL_PATH,
-        target_fps=30,
-        txt_path="outputs/mediapipe_output.txt"
+        target_fps=30
+    )
+
+    print(
+        "\n--- CREATE VALIDATION OUTPUTS ---\n"
+    )
+
+    create_validation_outputs(
+        marker_results,
+        mediapipe_results,
+        output_dir="outputs/validation",
+        slow_video_fps=10
     )
 
     print(
@@ -69,10 +74,10 @@ elif MODE == "comparison_video":
 
     print(
         f"Marker frames: "
-        f"{len(marker_results)}"
+        f"{len(marker_results['frames'])}"
     )
 
     print(
         f"MediaPipe frames: "
-        f"{len(mediapipe_results)}"
+        f"{len(mediapipe_results['frames'])}"
     )
