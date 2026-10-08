@@ -154,6 +154,8 @@ class BodyAngles:
     inclinazione_piede_sinistro: float
     inclinazione_piede_destro: float
 
+    
+
 
 #  COMPLETE BODY MODEL
 # rappresentazione totale della persona al frame n
