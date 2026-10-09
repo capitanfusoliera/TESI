@@ -155,7 +155,6 @@ class BodyAngles:
     inclinazione_piede_destro: float
 
 
-#  COMPLETE BODY MODEL
 # rappresentazione totale della persona al frame n
 
 @dataclass
@@ -170,32 +169,27 @@ class BodyModel:
     angles: BodyAngles
 
 
-# 7. GEOMETRY FUNCTIONS
+# GEOMETRY FUNCTIONS
 
-# per il punto centrale
-def midpoint(
-    point_a: Point,
-    point_b: Point
-) -> Point:
+# media fra 2 punti 
+def midpoint(point_a: Point, point_b: Point) -> Point:
 
     return Point(
         x=(point_a.x + point_b.x) / 2,
         y=(point_a.y + point_b.y) / 2,
         z=(point_a.z + point_b.z) / 2,
 
+        #come standard minimo prendo la visibilita minore
         visibility=min(
             point_a.visibility,
             point_b.visibility
         )
     )
 
+#calcola l'angolo su 3 punti 
+def calculate_angle(point_a: Point, vertex: Point, point_c: Point) -> float:
 
-def calculate_angle(
-    point_a: Point,
-    vertex: Point,
-    point_c: Point
-) -> float:
-
+    # creo 2 vettori partendo dal solito vertice 
     vector_a = (
         point_a.x - vertex.x,
         point_a.y - vertex.y
@@ -206,113 +200,56 @@ def calculate_angle(
         point_c.y - vertex.y
     )
 
-    dot_product = (
-        vector_a[0] * vector_c[0]
-        +
-        vector_a[1] * vector_c[1]
-    )
+    # calcolo il prodotto scalare tra due vettori
+    dot_product = vector_a[0] * vector_c[0] + vector_a[1] * vector_c[1]
+        
+    #calcolo la lunghezza dei vettori
+    magnitude_a = math.hypot(vector_a[0], vector_a[1])
 
-    magnitude_a = math.hypot(
-        vector_a[0],
-        vector_a[1]
-    )
-
-    magnitude_c = math.hypot(
-        vector_c[0],
-        vector_c[1]
-    )
+    magnitude_c = math.hypot(vector_c[0], vector_c[1])
 
     if magnitude_a == 0 or magnitude_c == 0:
         return 0.0
 
-    cosine = (
-        dot_product
-        /
-        (magnitude_a * magnitude_c)
-    )
+    #calcolo del coseno dell'angolo
+    #da li otteniamo l'arcoseno
+    #si converte il risultato in gradi
 
-    # Avoid numerical problems such as 1.00000001
-    cosine = max(
-        -1.0,
-        min(1.0, cosine)
-    )
+    cosine = dot_product / (magnitude_a * magnitude_c)
 
-    angle_radians = math.acos(
-        cosine
-    )
+    # forziamo il coseno a stare nei valori (evitiamo il rischio di arrotondamenti)
+    cosine = max(-1.0, min(1.0, cosine))
 
-    return math.degrees(
-        angle_radians
-    )
+    angle_radians = math.acos(cosine)
 
+    return math.degrees(angle_radians)
 
-def vertical_inclination(
-    segment: Segment
-) -> float:
+#AIUTO
+def vertical_inclination(segment: Segment) -> float:
 
-    dx = (
-        segment.end.x
-        - segment.start.x
-    )
+    dx = segment.end.x - segment.start.x
+    dy = segment.end.y - segment.start.y
 
-    dy = (
-        segment.end.y
-        - segment.start.y
-    )
-
-    return math.degrees(
-        math.atan2(
-            abs(dx),
-            abs(dy)
-        )
-    )
+    return math.degrees(math.atan2(abs(dx), abs(dy)))
 
 
-def horizontal_inclination(
-    segment: Segment
-) -> float:
+def horizontal_inclination(segment: Segment) -> float:
 
-    dx = (
-        segment.end.x
-        - segment.start.x
-    )
+    dx = (segment.end.x - segment.start.x)
+    dy = (segment.end.y - segment.start.y)
 
-    dy = (
-        segment.end.y
-        - segment.start.y
-    )
-
-    return math.degrees(
-        math.atan2(
-            abs(dy),
-            abs(dx)
-        )
-    )
+    return math.degrees(math.atan2(abs(dy), abs(dx)))
 
 
-def horizontal_tilt(
-    segment: Segment
-) -> float:
+def horizontal_tilt(segment: Segment) -> float:
 
-    dx = (
-        segment.end.x
-        - segment.start.x
-    )
-
-    dy = (
-        segment.end.y
-        - segment.start.y
-    )
+    dx = (segment.end.x- segment.start.x)
+    dy = (segment.end.y - segment.start.y)
 
     if dx == 0:
         return 90.0
 
-    angle = math.degrees(
-        math.atan2(
-            dy,
-            dx
-        )
-    )
+    angle = math.degrees(math.atan2(dy,dx))
 
     # Keep result approximately between -90 and +90 degrees
     if angle > 90:
@@ -323,136 +260,63 @@ def horizontal_tilt(
 
     return angle
 
+# FINE AIUTO
 
-# ============================================================
-# 8. BODY MODEL BUILDER
-# ============================================================
+#questo metodo si occupa di coordinare e creare 
+#l'intera struttura corporea tramite i punti di mediapipe
 
-def build_body_model(
-    mediapipe_landmarks,
-    frame_number=0,
-    time_ms=0
-) -> BodyModel:
+def build_body_model(mediapipe_landmarks,frame_number=0, time_ms=0) -> BodyModel:
 
-    # --------------------------------------------------------
-    # CREATE POINT FROM MEDIAPIPE LANDMARK
-    # --------------------------------------------------------
-
+    # legge un landmark trovato e restituisce un point
     def create_point(name):
 
-        landmark = mediapipe_landmarks[
-            name
-        ]
+        landmark = mediapipe_landmarks[name]
 
         return Point(
             x=landmark["x"],
             y=landmark["y"],
-            z=landmark.get(
-                "z",
-                0.0
-            ),
-            visibility=landmark[
-                "visibility"
-            ]
+            z=landmark.get("z",0.0),
+            visibility=landmark["visibility"]
         )
 
-    # ========================================================
-    # LANDMARKS
-    # ========================================================
-
+    #creazione di tutti i landmark necessari
     landmarks = BodyLandmarks(
 
-        nose=create_point(
-            "naso"
-        ),
+        nose=create_point("naso"),
 
-        left_shoulder=create_point(
-            "spalla_sinistra"
-        ),
+        left_shoulder=create_point("spalla_sinistra"),
+        right_shoulder=create_point("spalla_destra"),
 
-        right_shoulder=create_point(
-            "spalla_destra"
-        ),
+        left_elbow=create_point("gomito_sinistro"),
+        right_elbow=create_point("gomito_destro"),
 
-        left_elbow=create_point(
-            "gomito_sinistro"
-        ),
+        left_wrist=create_point("polso_sinistro"),
+        right_wrist=create_point("polso_destro"),
 
-        right_elbow=create_point(
-            "gomito_destro"
-        ),
+        left_hip=create_point("anca_sinistra"),
+        right_hip=create_point("anca_destra"),
 
-        left_wrist=create_point(
-            "polso_sinistro"
-        ),
+        left_knee=create_point("ginocchio_sinistro"),
+        right_knee=create_point("ginocchio_destro"),
 
-        right_wrist=create_point(
-            "polso_destro"
-        ),
+        left_ankle=create_point("caviglia_sinistra"),
+        right_ankle=create_point("caviglia_destra"),
 
-        left_hip=create_point(
-            "anca_sinistra"
-        ),
+        left_heel=create_point("tallone_sinistro"),
+        right_heel=create_point("tallone_destro"),
 
-        right_hip=create_point(
-            "anca_destra"
-        ),
-
-        left_knee=create_point(
-            "ginocchio_sinistro"
-        ),
-
-        right_knee=create_point(
-            "ginocchio_destro"
-        ),
-
-        left_ankle=create_point(
-            "caviglia_sinistra"
-        ),
-
-        right_ankle=create_point(
-            "caviglia_destra"
-        ),
-
-        left_heel=create_point(
-            "tallone_sinistro"
-        ),
-
-        right_heel=create_point(
-            "tallone_destro"
-        ),
-
-        left_foot=create_point(
-            "avampiede_sinistro"
-        ),
-
-        right_foot=create_point(
-            "avampiede_destro"
-        )
+        left_foot=create_point("avampiede_sinistro"),
+        right_foot=create_point("avampiede_destro")
     )
 
-    # ========================================================
-    # VIRTUAL POINTS
-    # ========================================================
+    #creazione dei punti calcolati
+    shoulder_center = midpoint(landmarks.left_shoulder, landmarks.right_shoulder)
 
-    shoulder_center = midpoint(
-        landmarks.left_shoulder,
-        landmarks.right_shoulder
-    )
+    hip_center = midpoint(landmarks.left_hip, landmarks.right_hip)
 
-    hip_center = midpoint(
-        landmarks.left_hip,
-        landmarks.right_hip
-    )
-
-    virtual_points = VirtualPoints(
-        shoulder_center=shoulder_center,
-        hip_center=hip_center
-    )
-
-    # ========================================================
-    # BODY SEGMENTS / BONES
-    # ========================================================
+#AIUTO
+    virtual_points = VirtualPoints(shoulder_center=shoulder_center, hip_center=hip_center)
+#FINE AIUTO
 
     segments = BodySegments(
 
