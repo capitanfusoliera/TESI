@@ -226,9 +226,9 @@ def calculate_angle(point_a: Point, vertex: Point, point_c: Point) -> float:
 
     return math.degrees(angle_radians)
 
-#AIUTO
 def vertical_inclination(segment: Segment) -> float:
 
+    #confrontando i segmenti dx e sx posso calcolare l'inclinazione verticale del segmento rispetto alla verticale
     dx = segment.end.x - segment.start.x
     dy = segment.end.y - segment.start.y
 
@@ -237,6 +237,7 @@ def vertical_inclination(segment: Segment) -> float:
 
 def horizontal_inclination(segment: Segment) -> float:
 
+    #confrontando i segmenti dx e sx posso calcolare l'inclinazione orizzontale del segmento rispetto all'orizzontale
     dx = (segment.end.x - segment.start.x)
     dy = (segment.end.y - segment.start.y)
 
@@ -245,6 +246,7 @@ def horizontal_inclination(segment: Segment) -> float:
 
 def horizontal_tilt(segment: Segment) -> float:
 
+    #da che lato è inclinato il segmento rispetto all'orizzontale
     dx = (segment.end.x- segment.start.x)
     dy = (segment.end.y - segment.start.y)
 
@@ -253,7 +255,6 @@ def horizontal_tilt(segment: Segment) -> float:
 
     angle = math.degrees(math.atan2(dy,dx))
 
-    # Keep result approximately between -90 and +90 degrees
     if angle > 90:
         angle -= 180
 
@@ -262,7 +263,6 @@ def horizontal_tilt(segment: Segment) -> float:
 
     return angle
 
-# FINE AIUTO
 
 #questo metodo si occupa di coordinare e creare 
 #l'intera struttura corporea tramite i punti di mediapipe
@@ -316,9 +316,7 @@ def build_body_model(mediapipe_landmarks,frame_number=0, time_ms=0) -> BodyModel
 
     hip_center = midpoint(landmarks.left_hip, landmarks.right_hip)
 
-#AIUTO
     virtual_points = VirtualPoints(shoulder_center=shoulder_center, hip_center=hip_center)
-#FINE AIUTO
 
     segments = BodySegments(
         #BRACCIA
@@ -487,38 +485,25 @@ def build_body_model(mediapipe_landmarks,frame_number=0, time_ms=0) -> BodyModel
             landmarks.right_foot
         ),
 
-        # ----------------------------------------------------
-        # Trunk inclination from vertical
-        #
-        # 0 degrees = vertical
-        # ----------------------------------------------------
+        #INCLINAZIONE TRONCO
 
         trunk_inclination=vertical_inclination(
             segments.trunk_center
         ),
 
-        # ----------------------------------------------------
-        # Shoulder tilt
-        #
-        # 0 degrees = horizontal
-        # positive / negative tells which side is lower
-        # ----------------------------------------------------
+        #LATO INCLINAZIONE SPALLE
 
         shoulder_tilt=horizontal_tilt(
             segments.shoulder_line
         ),
 
-        # ----------------------------------------------------
-        # Hip tilt
-        # ----------------------------------------------------
+        #LATO INCLINAZIONE ANCHE
 
         hip_tilt=horizontal_tilt(
             segments.hip_line
         ),
 
-        # ----------------------------------------------------
-        # Shank inclination from vertical
-        # ----------------------------------------------------
+        # INCLINAZIONE VERTICALE GAMBE
 
         left_shank_inclination=vertical_inclination(
             segments.left_shank
@@ -528,9 +513,7 @@ def build_body_model(mediapipe_landmarks,frame_number=0, time_ms=0) -> BodyModel
             segments.right_shank
         ),
 
-        # ----------------------------------------------------
-        # Foot inclination from horizontal
-        # ----------------------------------------------------
+        #INCLINAZIONE ORIZZONTALE PIEDI
 
         left_foot_inclination=horizontal_inclination(
             segments.left_foot
@@ -541,9 +524,7 @@ def build_body_model(mediapipe_landmarks,frame_number=0, time_ms=0) -> BodyModel
         )
     )
 
-    # ========================================================
-    # COMPLETE MODEL
-    # ========================================================
+    # SCHELETRO COMPLETO DEL CORPO
 
     return BodyModel(
         frame_number=frame_number,
