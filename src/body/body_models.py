@@ -321,16 +321,13 @@ def build_body_model(mediapipe_landmarks,frame_number=0, time_ms=0) -> BodyModel
 #FINE AIUTO
 
     segments = BodySegments(
-
-        # ----------------------------------------------------
-        # Arms
-        # ----------------------------------------------------
+        #BRACCIA
 
         left_upper_arm=Segment(
             landmarks.left_shoulder,
             landmarks.left_elbow
         ),
-
+        
         right_upper_arm=Segment(
             landmarks.right_shoulder,
             landmarks.right_elbow
@@ -346,9 +343,7 @@ def build_body_model(mediapipe_landmarks,frame_number=0, time_ms=0) -> BodyModel
             landmarks.right_wrist
         ),
 
-        # ----------------------------------------------------
-        # Torso
-        # ----------------------------------------------------
+        #TORACE
 
         shoulder_line=Segment(
             landmarks.left_shoulder,
@@ -375,9 +370,7 @@ def build_body_model(mediapipe_landmarks,frame_number=0, time_ms=0) -> BodyModel
             shoulder_center
         ),
 
-        # ----------------------------------------------------
-        # Legs
-        # ----------------------------------------------------
+        #GAMBE
 
         left_thigh=Segment(
             landmarks.left_hip,
@@ -399,9 +392,7 @@ def build_body_model(mediapipe_landmarks,frame_number=0, time_ms=0) -> BodyModel
             landmarks.right_ankle
         ),
 
-        # ----------------------------------------------------
-        # Feet
-        # ----------------------------------------------------
+        #PIEDI
 
         left_foot=Segment(
             landmarks.left_heel,
@@ -424,17 +415,9 @@ def build_body_model(mediapipe_landmarks,frame_number=0, time_ms=0) -> BodyModel
         )
     )
 
-    # ========================================================
-    # ANGLES
-    # ========================================================
-
     angles = BodyAngles(
 
-        # ----------------------------------------------------
-        # Elbow angle
-        #
-        # shoulder -> elbow -> wrist
-        # ----------------------------------------------------
+        #ANGOLO GOMITO SX E DX
 
         left_elbow=calculate_angle(
             landmarks.left_shoulder,
@@ -448,11 +431,7 @@ def build_body_model(mediapipe_landmarks,frame_number=0, time_ms=0) -> BodyModel
             landmarks.right_wrist
         ),
 
-        # ----------------------------------------------------
-        # Shoulder angle
-        #
-        # elbow -> shoulder -> hip
-        # ----------------------------------------------------
+        #ANGOLO SPALLA DX E SX
 
         left_shoulder=calculate_angle(
             landmarks.left_elbow,
@@ -466,11 +445,7 @@ def build_body_model(mediapipe_landmarks,frame_number=0, time_ms=0) -> BodyModel
             landmarks.right_hip
         ),
 
-        # ----------------------------------------------------
-        # Hip angle
-        #
-        # shoulder -> hip -> knee
-        # ----------------------------------------------------
+        # ANGOLO ANCA DX E SX
 
         left_hip=calculate_angle(
             landmarks.left_shoulder,
@@ -484,11 +459,7 @@ def build_body_model(mediapipe_landmarks,frame_number=0, time_ms=0) -> BodyModel
             landmarks.right_knee
         ),
 
-        # ----------------------------------------------------
-        # Knee angle
-        #
-        # hip -> knee -> ankle
-        # ----------------------------------------------------
+        #ANGOLO GINOCCHIO DX E SX
 
         left_knee=calculate_angle(
             landmarks.left_hip,
@@ -502,11 +473,7 @@ def build_body_model(mediapipe_landmarks,frame_number=0, time_ms=0) -> BodyModel
             landmarks.right_ankle
         ),
 
-        # ----------------------------------------------------
-        # Ankle angle
-        #
-        # knee -> ankle -> forefoot
-        # ----------------------------------------------------
+        #ANGOLO CAVIGLIA DX E SX
 
         left_ankle=calculate_angle(
             landmarks.left_knee,
