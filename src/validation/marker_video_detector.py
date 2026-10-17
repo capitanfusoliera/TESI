@@ -1,5 +1,4 @@
 import cv2
-
 from src.validation.marker_image_detector import detect_markers_frame
 
 def detect_markers_video(
