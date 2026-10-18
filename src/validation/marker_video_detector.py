@@ -1,3 +1,7 @@
+# Questo modulo applica il rilevamento dei marker fisici a un video
+# Analizza i frame selezionati e restituisce la posizione dei marker
+# rilevati. Viene utilizzato esclusivamente nella fase di validazione
+
 import cv2
 from src.validation.marker_image_detector import detect_markers_frame
 

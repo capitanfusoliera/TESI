@@ -1,4 +1,6 @@
-#si occupa di rilevare i landmarker corporei
+# Questo modulo utilizza MediaPipe per rilevare i landmark corporei
+# presenti in una singola immagine e restituisce i dati rilevati.
+
 import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision

@@ -1,3 +1,8 @@
+# Questo modulo definisce la struttura dati di una singola ripetizione
+# Memorizza il numero della ripetizione, i frame di inizio e fine
+# i BodyModel appartenenti alla ripetizione e gli errori rilevati
+# Definisce inoltre le possibili fasi dello squat
+
 from dataclasses import dataclass, field
 from enum import Enum
 

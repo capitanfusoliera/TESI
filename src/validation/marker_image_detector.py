@@ -1,3 +1,7 @@
+# Questo modulo rileva i marker fisici colorati presenti in una singola
+# immagine o frame. Viene utilizzato esclusivamente per la validazione
+# sperimentale dei landmark rilevati da MediaPipe
+
 import cv2
 import numpy as np
 

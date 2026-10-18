@@ -1,3 +1,7 @@
+# Questo modulo gestisce il confronto tra i marker fisici e i landmark
+# rilevati da MediaPipe durante la fase di validazione
+# Si occupa inoltre della creazione degli output relativi al confronto
+
 import cv2
 import os
 

@@ -1,5 +1,6 @@
-# costruiamo un modello del utente grazie a mediapipe
-# ossa angoli e punti corporei
+# Questo modulo costruisce il modello del corpo relativo a un singolo frame.
+# A partire dai landmark MediaPipe crea punti, segmenti, punti virtuali
+# e calcola gli angoli e le inclinazioni utilizzate nelle analisi successive.
 
 from dataclasses import dataclass
 import math
@@ -284,132 +285,135 @@ def build_body_model(mediapipe_landmarks,frame_number=0, time_ms=0) -> BodyModel
     #creazione di tutti i landmark necessari
     landmarks = BodyLandmarks(
 
-        nose=create_point("naso"),
+        naso=create_point("naso"),
 
-        left_shoulder=create_point("spalla_sinistra"),
-        right_shoulder=create_point("spalla_destra"),
+        spalla_sinistra=create_point("spalla_sinistra"),
+        spalla_destra=create_point("spalla_destra"),
 
-        left_elbow=create_point("gomito_sinistro"),
-        right_elbow=create_point("gomito_destro"),
+        gomito_sinistro=create_point("gomito_sinistro"),
+        gomito_destro=create_point("gomito_destro"),
 
-        left_wrist=create_point("polso_sinistro"),
-        right_wrist=create_point("polso_destro"),
+        polso_sinistro=create_point("polso_sinistro"),
+        polso_destro=create_point("polso_destro"),
 
-        left_hip=create_point("anca_sinistra"),
-        right_hip=create_point("anca_destra"),
+        anca_sinistra=create_point("anca_sinistra"),
+        anca_destra=create_point("anca_destra"),
 
-        left_knee=create_point("ginocchio_sinistro"),
-        right_knee=create_point("ginocchio_destro"),
+        ginocchio_sinistro=create_point("ginocchio_sinistro"),
+        ginocchio_destro=create_point("ginocchio_destro"),
 
-        left_ankle=create_point("caviglia_sinistra"),
-        right_ankle=create_point("caviglia_destra"),
+        caviglia_sinistra=create_point("caviglia_sinistra"),
+        caviglia_destra=create_point("caviglia_destra"),
 
-        left_heel=create_point("tallone_sinistro"),
-        right_heel=create_point("tallone_destro"),
+        tallone_sinistro=create_point("tallone_sinistro"),
+        tallone_destro=create_point("tallone_destro"),
 
-        left_foot=create_point("avampiede_sinistro"),
-        right_foot=create_point("avampiede_destro")
+        avampiede_sinistro=create_point("avampiede_sinistro"),
+        avampiede_destro=create_point("avampiede_destro")
     )
 
     #creazione dei punti calcolati
-    shoulder_center = midpoint(landmarks.left_shoulder, landmarks.right_shoulder)
+    centro_spalle = midpoint(landmarks.spalla_sinistra, landmarks.spalla_destra)
 
-    hip_center = midpoint(landmarks.left_hip, landmarks.right_hip)
+    centro_anche = midpoint(landmarks.anca_sinistra, landmarks.anca_destra)
 
-    virtual_points = VirtualPoints(shoulder_center=shoulder_center, hip_center=hip_center)
+    virtual_points = VirtualPoints(
+        centro_spalle=centro_spalle,
+        centro_anche=centro_anche
+    )
 
     segments = BodySegments(
         #BRACCIA
 
-        left_upper_arm=Segment(
-            landmarks.left_shoulder,
-            landmarks.left_elbow
+        omero_sinistro=Segment(
+            landmarks.spalla_sinistra,
+            landmarks.gomito_sinistro
         ),
         
-        right_upper_arm=Segment(
-            landmarks.right_shoulder,
-            landmarks.right_elbow
+        omero_destro=Segment(
+            landmarks.spalla_destra,
+            landmarks.gomito_destro
         ),
 
-        left_forearm=Segment(
-            landmarks.left_elbow,
-            landmarks.left_wrist
+        avambraccio_sinistro=Segment(
+            landmarks.gomito_sinistro,
+            landmarks.polso_sinistro
         ),
 
-        right_forearm=Segment(
-            landmarks.right_elbow,
-            landmarks.right_wrist
+        avambraccio_destro=Segment(
+            landmarks.gomito_destro,
+            landmarks.polso_destro
         ),
 
         #TORACE
 
-        shoulder_line=Segment(
-            landmarks.left_shoulder,
-            landmarks.right_shoulder
+        linea_spalle=Segment(
+            landmarks.spalla_sinistra,
+            landmarks.spalla_destra
         ),
 
-        hip_line=Segment(
-            landmarks.left_hip,
-            landmarks.right_hip
+        linea_bacino=Segment(
+            landmarks.anca_sinistra,
+            landmarks.anca_destra
         ),
 
-        left_torso=Segment(
-            landmarks.left_shoulder,
-            landmarks.left_hip
+        lato_tronco_sinistro=Segment(
+            landmarks.spalla_sinistra,
+            landmarks.anca_sinistra
         ),
 
-        right_torso=Segment(
-            landmarks.right_shoulder,
-            landmarks.right_hip
+        lato_tronco_destro=Segment(
+            landmarks.spalla_destra,
+            landmarks.anca_destra
         ),
 
-        trunk_center=Segment(
-            hip_center,
-            shoulder_center
+        asse_tronco=Segment(
+            centro_anche,
+            centro_spalle
         ),
 
         #GAMBE
 
-        left_thigh=Segment(
-            landmarks.left_hip,
-            landmarks.left_knee
+        femore_sinistro=Segment(
+            landmarks.anca_sinistra,
+            landmarks.ginocchio_sinistro
         ),
 
-        right_thigh=Segment(
-            landmarks.right_hip,
-            landmarks.right_knee
+        femore_destro=Segment(
+            landmarks.anca_destra,
+            landmarks.ginocchio_destro
         ),
 
-        left_shank=Segment(
-            landmarks.left_knee,
-            landmarks.left_ankle
+        gamba_sinistra=Segment(
+            landmarks.ginocchio_sinistro,
+            landmarks.caviglia_sinistra
         ),
 
-        right_shank=Segment(
-            landmarks.right_knee,
-            landmarks.right_ankle
+        gamba_destra=Segment(
+            landmarks.ginocchio_destro,
+            landmarks.caviglia_destra
         ),
 
         #PIEDI
 
-        left_foot=Segment(
-            landmarks.left_heel,
-            landmarks.left_foot
+        asse_piede_sinistro=Segment(
+            landmarks.tallone_sinistro,
+            landmarks.avampiede_sinistro
         ),
 
-        right_foot=Segment(
-            landmarks.right_heel,
-            landmarks.right_foot
+        asse_piede_destro=Segment(
+            landmarks.tallone_destro,
+            landmarks.avampiede_destro
         ),
 
-        left_ankle_to_foot=Segment(
-            landmarks.left_ankle,
-            landmarks.left_foot
+        asse_caviglia_piede_sinistro=Segment(
+            landmarks.caviglia_sinistra,
+            landmarks.avampiede_sinistro
         ),
 
-        right_ankle_to_foot=Segment(
-            landmarks.right_ankle,
-            landmarks.right_foot
+        asse_caviglia_piede_destro=Segment(
+            landmarks.caviglia_destra,
+            landmarks.avampiede_destro
         )
     )
 
@@ -417,110 +421,110 @@ def build_body_model(mediapipe_landmarks,frame_number=0, time_ms=0) -> BodyModel
 
         #ANGOLO GOMITO SX E DX
 
-        left_elbow=calculate_angle(
-            landmarks.left_shoulder,
-            landmarks.left_elbow,
-            landmarks.left_wrist
+        gomito_sinistro=calculate_angle(
+            landmarks.spalla_sinistra,
+            landmarks.gomito_sinistro,
+            landmarks.polso_sinistro
         ),
 
-        right_elbow=calculate_angle(
-            landmarks.right_shoulder,
-            landmarks.right_elbow,
-            landmarks.right_wrist
+        gomito_destro=calculate_angle(
+            landmarks.spalla_destra,
+            landmarks.gomito_destro,
+            landmarks.polso_destro
         ),
 
         #ANGOLO SPALLA DX E SX
 
-        left_shoulder=calculate_angle(
-            landmarks.left_elbow,
-            landmarks.left_shoulder,
-            landmarks.left_hip
+        spalla_sinistra=calculate_angle(
+            landmarks.gomito_sinistro,
+            landmarks.spalla_sinistra,
+            landmarks.anca_sinistra
         ),
 
-        right_shoulder=calculate_angle(
-            landmarks.right_elbow,
-            landmarks.right_shoulder,
-            landmarks.right_hip
+        spalla_destra=calculate_angle(
+            landmarks.gomito_destro,
+            landmarks.spalla_destra,
+            landmarks.anca_destra
         ),
 
         # ANGOLO ANCA DX E SX
 
-        left_hip=calculate_angle(
-            landmarks.left_shoulder,
-            landmarks.left_hip,
-            landmarks.left_knee
+        anca_sinistra=calculate_angle(
+            landmarks.spalla_sinistra,
+            landmarks.anca_sinistra,
+            landmarks.ginocchio_sinistro
         ),
 
-        right_hip=calculate_angle(
-            landmarks.right_shoulder,
-            landmarks.right_hip,
-            landmarks.right_knee
+        anca_destra=calculate_angle(
+            landmarks.spalla_destra,
+            landmarks.anca_destra,
+            landmarks.ginocchio_destro
         ),
 
         #ANGOLO GINOCCHIO DX E SX
 
-        left_knee=calculate_angle(
-            landmarks.left_hip,
-            landmarks.left_knee,
-            landmarks.left_ankle
+        ginocchio_sinistro=calculate_angle(
+            landmarks.anca_sinistra,
+            landmarks.ginocchio_sinistro,
+            landmarks.caviglia_sinistra
         ),
 
-        right_knee=calculate_angle(
-            landmarks.right_hip,
-            landmarks.right_knee,
-            landmarks.right_ankle
+        ginocchio_destro=calculate_angle(
+            landmarks.anca_destra,
+            landmarks.ginocchio_destro,
+            landmarks.caviglia_destra
         ),
 
         #ANGOLO CAVIGLIA DX E SX
 
-        left_ankle=calculate_angle(
-            landmarks.left_knee,
-            landmarks.left_ankle,
-            landmarks.left_foot
+        caviglia_sinistra=calculate_angle(
+            landmarks.ginocchio_sinistro,
+            landmarks.caviglia_sinistra,
+            landmarks.avampiede_sinistro
         ),
 
-        right_ankle=calculate_angle(
-            landmarks.right_knee,
-            landmarks.right_ankle,
-            landmarks.right_foot
+        caviglia_destra=calculate_angle(
+            landmarks.ginocchio_destro,
+            landmarks.caviglia_destra,
+            landmarks.avampiede_destro
         ),
 
         #INCLINAZIONE TRONCO
 
-        trunk_inclination=vertical_inclination(
-            segments.trunk_center
+        inclinazione_tronco=vertical_inclination(
+            segments.asse_tronco
         ),
 
         #LATO INCLINAZIONE SPALLE
 
-        shoulder_tilt=horizontal_tilt(
-            segments.shoulder_line
+        inclinazione_spalle=horizontal_tilt(
+            segments.linea_spalle
         ),
 
         #LATO INCLINAZIONE ANCHE
 
-        hip_tilt=horizontal_tilt(
-            segments.hip_line
+        inclinazione_bacino=horizontal_tilt(
+            segments.linea_bacino
         ),
 
         # INCLINAZIONE VERTICALE GAMBE
 
-        left_shank_inclination=vertical_inclination(
-            segments.left_shank
+        inclinazione_gamba_sinistra=vertical_inclination(
+            segments.gamba_sinistra
         ),
 
-        right_shank_inclination=vertical_inclination(
-            segments.right_shank
+        inclinazione_gamba_destra=vertical_inclination(
+            segments.gamba_destra
         ),
 
         #INCLINAZIONE ORIZZONTALE PIEDI
 
-        left_foot_inclination=horizontal_inclination(
-            segments.left_foot
+        inclinazione_piede_sinistro=horizontal_inclination(
+            segments.asse_piede_sinistro
         ),
 
-        right_foot_inclination=horizontal_inclination(
-            segments.right_foot
+        inclinazione_piede_destro=horizontal_inclination(
+            segments.asse_piede_destro
         )
     )
 

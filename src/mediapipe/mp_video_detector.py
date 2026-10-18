@@ -1,3 +1,7 @@
+# Questo modulo analizza un video con MediaPipe.
+# Legge i frame del video, rileva i landmark corporei per ciascun frame
+# analizzato e restituisce i risultati insieme alle informazioni del video.
+
 import cv2
 import mediapipe as mp
 
