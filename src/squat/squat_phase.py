@@ -5,10 +5,10 @@ class SquatPhaseDetector:
 
     def __init__(self):
 
-        #soglia per passare da in piedi a discesa
+        # soglia per passare da in piedi a discesa
         self.standing_threshold = 160
 
-        #soglia per entrare nella fase di accosciata
+        # soglia per entrare nella fase di accosciata
         self.bottom_threshold = 110
 
 
@@ -18,9 +18,9 @@ class SquatPhaseDetector:
         right_knee_angle = body.angles.ginocchio_destro
 
 
-        #IN PIEDI
-        #se entrambe le ginocchia scendono sotto i 160 gradi
-        #inizia la fase di discesa
+        # IN PIEDI
+        # se entrambe le ginocchia scendono sotto i 160 gradi
+        # inizia la fase di discesa
 
         if current_phase == SquatPhase.STANDING:
 
@@ -30,19 +30,12 @@ class SquatPhaseDetector:
                 right_knee_angle < self.standing_threshold
             ):
 
-                print(
-                    f"INIZIO DISCESA | "
-                    f"Frame {body.frame_number} | "
-                    f"Ginocchio sinistro: {left_knee_angle:.2f}° | "
-                    f"Ginocchio destro: {right_knee_angle:.2f}°"
-                )
-
                 return SquatPhase.DESCENDING
 
 
-        #DISCESA
-        #quando entrambe le ginocchia scendono sotto i 100 gradi
-        #si entra nella fase di accosciata
+        # DISCESA
+        # quando entrambe le ginocchia scendono sotto i 110 gradi
+        # si entra nella fase di accosciata
 
         elif current_phase == SquatPhase.DESCENDING:
 
@@ -52,19 +45,12 @@ class SquatPhaseDetector:
                 right_knee_angle < self.bottom_threshold
             ):
 
-                print(
-                    f"INIZIO ACCOSCIATA | "
-                    f"Frame {body.frame_number} | "
-                    f"Ginocchio sinistro: {left_knee_angle:.2f}° | "
-                    f"Ginocchio destro: {right_knee_angle:.2f}°"
-                )
-
                 return SquatPhase.BOTTOM
 
 
-        #ACCOSCIATA
-        #quando entrambe le ginocchia tornano sopra i 100 gradi
-        #inizia la fase di risalita
+        # ACCOSCIATA
+        # quando entrambe le ginocchia tornano sopra i 110 gradi
+        # inizia la fase di risalita
 
         elif current_phase == SquatPhase.BOTTOM:
 
@@ -74,19 +60,12 @@ class SquatPhaseDetector:
                 right_knee_angle > self.bottom_threshold
             ):
 
-                print(
-                    f"INIZIO RISALITA | "
-                    f"Frame {body.frame_number} | "
-                    f"Ginocchio sinistro: {left_knee_angle:.2f}° | "
-                    f"Ginocchio destro: {right_knee_angle:.2f}°"
-                )
-
                 return SquatPhase.ASCENDING
 
 
-        #RISALITA
-        #quando entrambe le ginocchia tornano almeno a 160 gradi
-        #la ripetizione è terminata e si torna in piedi
+        # RISALITA
+        # quando entrambe le ginocchia tornano almeno a 160 gradi
+        # la ripetizione è terminata e si torna in piedi
 
         elif current_phase == SquatPhase.ASCENDING:
 
@@ -95,13 +74,6 @@ class SquatPhaseDetector:
                 and
                 right_knee_angle >= self.standing_threshold
             ):
-
-                print(
-                    f"FINE RISALITA - IN PIEDI | "
-                    f"Frame {body.frame_number} | "
-                    f"Ginocchio sinistro: {left_knee_angle:.2f}° | "
-                    f"Ginocchio destro: {right_knee_angle:.2f}°"
-                )
 
                 return SquatPhase.STANDING
 

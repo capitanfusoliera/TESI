@@ -2,6 +2,8 @@ import argparse
 import cv2
 import os
 
+from src.output.scheleton_ouput import create_skeleton_frame
+
 from src.mediapipe.mp_video_detector import detect_pose_video
 from src.body.body_models import build_body_model
 
@@ -26,7 +28,7 @@ def analyze_video(video_path):
     mediapipe_results = detect_pose_video(
         video_path=video_path,
         model_path=MODEL_PATH,
-        target_fps=30
+        target_fps=60
     )
 
 
@@ -45,9 +47,18 @@ def analyze_video(video_path):
         os.path.basename(video_path)
     )[0]
 
+
+    # percorso video normale
     output_path = (
         f"outputs/{video_name}_analysis_control.mp4"
     )
+
+
+    # percorso video skeleton
+    skeleton_output_path = (
+        f"outputs/{video_name}_skeleton.mp4"
+    )
+
 
     # se sto rianalizzando lo stesso video
     # elimino il vecchio output
@@ -64,10 +75,27 @@ def analyze_video(video_path):
             )
 
             return
-    
+
+
+    if os.path.exists(skeleton_output_path):
+
+        try:
+            os.remove(skeleton_output_path)
+
+        except PermissionError:
+
+            print(
+                "ERRORE: il video skeleton è aperto. "
+                "Chiudilo e riprova."
+            )
+
+            return
+
 
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
 
+
+    # creo il video normale
     video_writer = cv2.VideoWriter(
         output_path,
         fourcc,
@@ -78,12 +106,40 @@ def analyze_video(video_path):
         )
     )
 
+
+    # creo il video skeleton
+    skeleton_video_writer = cv2.VideoWriter(
+        skeleton_output_path,
+        fourcc,
+        mediapipe_results["analysis_fps"],
+        (
+            mediapipe_results["width"],
+            mediapipe_results["height"]
+        )
+    )
+
+
     if not video_writer.isOpened():
 
         print(
             "ERRORE: impossibile creare "
             "il video di output."
         )
+
+        cap.release()
+
+        return
+
+
+    if not skeleton_video_writer.isOpened():
+
+        print(
+            "ERRORE: impossibile creare "
+            "il video skeleton."
+        )
+
+        cap.release()
+        video_writer.release()
 
         return
 
@@ -125,18 +181,26 @@ def analyze_video(video_path):
             continue
 
 
-        # Se MediaPipe non ha trovato il corpo
-        # salvo comunque il frame e passo al successivo
+        # se MediaPipe non ha trovato il corpo
+        # salvo comunque il frame normale
+        # e un frame nero nello skeleton
         if not landmarks:
 
             video_writer.write(
                 frame
             )
 
+            skeleton_video_writer.write(
+                frame * 0
+            )
+
             continue
 
 
-        # Costruisco il BodyModel del frame
+        # ----------------------------------------------------
+        # BODY MODEL
+        # ----------------------------------------------------
+
         body = build_body_model(
             mediapipe_landmarks=landmarks,
             frame_number=frame_number,
@@ -144,11 +208,31 @@ def analyze_video(video_path):
         )
 
 
-        # Passo il corpo allo SquatAnalyzer
+        # passo il corpo allo SquatAnalyzer
         squat_analyzer.update(
             body
         )
 
+
+        # ----------------------------------------------------
+        # VIDEO SKELETON
+        # ----------------------------------------------------
+
+        skeleton_frame = create_skeleton_frame(
+            body,
+            mediapipe_results["width"],
+            mediapipe_results["height"]
+        )
+
+
+        skeleton_video_writer.write(
+            skeleton_frame
+        )
+
+
+        # ----------------------------------------------------
+        # VIDEO DI CONTROLLO NORMALE
+        # ----------------------------------------------------
 
         # disegno i landmark
         for landmark_name, landmark in landmarks.items():
@@ -201,18 +285,12 @@ def analyze_video(video_path):
         )
 
 
-    # ATTENZIONE:
-    # questo deve stare FUORI dal for
+    # ----------------------------------------------------
+    # FINE ANALISI
+    # ----------------------------------------------------
+
+    # deve stare fuori dal for
     squat_analyzer.finish_analysis()
-
-
-    cap.release()
-    video_writer.release()
-
-    # salvo il frame nel video di controllo
-    video_writer.write(
-        frame
-    )
 
 
     # ----------------------------------------------------
@@ -223,10 +301,18 @@ def analyze_video(video_path):
 
     video_writer.release()
 
+    skeleton_video_writer.release()
+
+
     print()
     print(
         f"Video di controllo salvato in: "
         f"{output_path}"
+    )
+
+    print(
+        f"Video skeleton salvato in: "
+        f"{skeleton_output_path}"
     )
 
 
@@ -254,7 +340,6 @@ def analyze_video(video_path):
         print(
             f"Errori: {rep.errors}"
         )
-
 
 def validation_video(video_path):
 

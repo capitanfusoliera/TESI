@@ -16,15 +16,20 @@ class SquatAnalyzer:
 
         self.current_rep = None
 
-        # numero di ripetizioni COMPLETATE
+        # numero di ripetizioni completate
         self.rep_count = 0
 
         self.completed_reps = []
 
-
         # contiene i risultati frame per frame
         # della fase attuale
         self.phase_frames = []
+
+        self.min_error_frames = {"knee_convergence": 6}
+
+        # contiene i risultati delle varie fasi
+        # della ripetizione attuale
+        self.rep_phases = {}
 
 
     def update(self, body):
@@ -45,35 +50,49 @@ class SquatAnalyzer:
 
 
         # se la fase sta cambiando
-        # stampo il riepilogo della fase appena terminata
+        # salvo i risultati della fase appena terminata
         if new_phase != self.current_phase:
 
-            self._print_phase_errors(
+            self._save_phase_errors(
                 self.current_phase
             )
 
             self.phase_frames = []
 
 
-        # se passo da in piedi a discesa
-        # inizia una nuova ripetizione
-        if (
-            self.current_phase == SquatPhase.STANDING
-            and
-            new_phase == SquatPhase.DESCENDING
-        ):
+            # se passo da in piedi a discesa
+            # inizia una nuova ripetizione
+            if (
+                self.current_phase == SquatPhase.STANDING
+                and
+                new_phase == SquatPhase.DESCENDING
+            ):
 
-            self._start_rep(
-                body.frame_number
-            )
+                self._start_rep(
+                    body.frame_number
+                )
+
+
+            # se passo da risalita a in piedi
+            # la ripetizione è terminata
+            elif (
+                self.current_phase == SquatPhase.ASCENDING
+                and
+                new_phase == SquatPhase.STANDING
+                and
+                self.current_rep is not None
+            ):
+
+                self._finish_rep(
+                    body.frame_number
+                )
 
 
         # aggiorno la fase corrente
         self.current_phase = new_phase
 
 
-        # controllo gli errori SEMPRE
-        # quindi anche nella fase STANDING
+        # controllo gli errori
         detected_errors = self.error_manager.check(
             body=body,
             phase=self.current_phase
@@ -101,71 +120,50 @@ class SquatAnalyzer:
             )
 
 
-        # se la ripetizione è aperta
-        # e siamo tornati in piedi
-        # la ripetizione è terminata
-        if (
-            self.current_rep is not None
-            and
-            self.current_phase == SquatPhase.STANDING
-        ):
-
-            self._finish_rep(
-                body.frame_number
-            )
-
-
     def _start_rep(self, frame_number):
 
-        # il counter non viene ancora aumentato
-        # perché la ripetizione non è ancora completata
-        repetition_number = (
-            self.rep_count + 1
-        )
-
         self.current_rep = Repetition(
-            number=repetition_number,
+            number=self.rep_count,
             start_frame=frame_number
         )
 
-        print()
-        print(
-            f"===== INIZIO RIPETIZIONE "
-            f"{repetition_number} | "
-            f"Frame {frame_number} ====="
-        )
+
+        # aggiungo alla ripetizione anche eventuali errori
+        # rilevati durante la fase STANDING iniziale
+
+        for phase_data in self.rep_phases.values():
+
+            for error_name in phase_data["errors"]:
+
+                self.current_rep.errors[
+                    error_name
+                ] = True
 
 
     def _finish_rep(self, frame_number):
 
-        self.current_rep.end_frame = (
-            frame_number
-        )
+        self.current_rep.end_frame = frame_number
 
         self.completed_reps.append(
             self.current_rep
         )
 
 
-        # il counter aumenta SOLO
-        # quando la ripetizione è conclusa
+        # stampo tutti i risultati della ripetizione
+        self._print_rep_results(
+            self.current_rep.number
+        )
+
+
+        # aumento il counter solamente
+        # quando la ripetizione è completata
         self.rep_count += 1
 
 
-        print()
-        print(
-            f"===== FINE RIPETIZIONE "
-            f"{self.current_rep.number} | "
-            f"Frame {frame_number} ====="
-        )
-
-        print(
-            f"Ripetizioni completate: "
-            f"{self.rep_count}"
-        )
-
-
         self.current_rep = None
+
+        # preparo i risultati per la prossima ripetizione
+        self.rep_phases = {}
 
 
     def _update_errors(
@@ -189,7 +187,7 @@ class SquatAnalyzer:
                 )
 
 
-    def _print_phase_errors(
+    def _save_phase_errors(
         self,
         phase
     ):
@@ -198,87 +196,64 @@ class SquatAnalyzer:
             return
 
 
-        start_frame = (
-            self.phase_frames[0][0]
-        )
-
-        end_frame = (
-            self.phase_frames[-1][0]
-        )
-
-
-        print()
-
-        print(
-            f"----- {self._phase_name(phase)} | "
-            f"Frame {start_frame} -> "
-            f"{end_frame} -----"
-        )
+        start_frame = self.phase_frames[0][0]
+        end_frame = self.phase_frames[-1][0]
 
 
         # recupero tutti i tipi di errore
         # controllati durante questa fase
-        error_names = set()
+        error_names = []
 
         for frame_number, errors in self.phase_frames:
 
             for error_name in errors:
 
-                error_names.add(
-                    error_name
-                )
+                if error_name not in error_names:
+
+                    error_names.append(
+                        error_name
+                    )
 
 
-        phase_has_errors = False
+        phase_errors = {}
 
 
         for error_name in error_names:
 
-            error_ranges = (
-                self._get_error_ranges(
-                    error_name
-                )
+            error_ranges = self._get_error_ranges(
+                error_name
             )
-
 
             if error_ranges:
 
-                phase_has_errors = True
-
-                for start, end in error_ranges:
-
-                    if start == end:
-
-                        print(
-                            f"{error_name} | "
-                            f"errore frame {start}"
-                        )
-
-                    else:
-
-                        print(
-                            f"{error_name} | "
-                            f"errore frame "
-                            f"{start}-{end}"
-                        )
+                phase_errors[
+                    error_name
+                ] = error_ranges
 
 
-        if not phase_has_errors:
+        self.rep_phases[
+            phase
+        ] = {
 
-            print(
-                "Nessun errore"
-            )
+            "start_frame": start_frame,
+            "end_frame": end_frame,
+            "errors": phase_errors
+        }
 
 
-    def _get_error_ranges(
-        self,
-        error_name
-    ):
+    def _get_error_ranges(self, error_name):
 
         ranges = []
 
         start_error = None
         end_error = None
+
+        error_frame_count = 0
+
+        min_frames = self.min_error_frames.get(
+            error_name,
+            1
+        )
 
 
         for frame_number, errors in self.phase_frames:
@@ -293,43 +268,127 @@ class SquatAnalyzer:
 
                 if start_error is None:
 
-                    start_error = (
-                        frame_number
-                    )
+                    start_error = frame_number
+                    error_frame_count = 1
 
-                end_error = (
-                    frame_number
-                )
+                else:
+
+                    error_frame_count += 1
+
+
+                end_error = frame_number
 
 
             else:
 
                 if start_error is not None:
 
-                    ranges.append(
-                        (
-                            start_error,
-                            end_error
+                    if error_frame_count >= min_frames:
+
+                        ranges.append(
+                            (
+                                start_error,
+                                end_error
+                            )
                         )
-                    )
+
 
                     start_error = None
                     end_error = None
+                    error_frame_count = 0
 
 
         # se la fase finisce mentre
         # l'errore è ancora presente
         if start_error is not None:
 
-            ranges.append(
-                (
-                    start_error,
-                    end_error
+            if error_frame_count >= min_frames:
+
+                ranges.append(
+                    (
+                        start_error,
+                        end_error
+                    )
+                )
+
+
+        return ranges
+
+
+    def _print_rep_results(
+        self,
+        repetition_number
+    ):
+
+        print()
+        print(
+            f"========== RIPETIZIONE "
+            f"{repetition_number} =========="
+        )
+
+
+        phases = [
+            SquatPhase.STANDING,
+            SquatPhase.DESCENDING,
+            SquatPhase.BOTTOM,
+            SquatPhase.ASCENDING
+        ]
+
+
+        for phase in phases:
+
+            if phase not in self.rep_phases:
+                continue
+
+
+            phase_data = self.rep_phases[
+                phase
+            ]
+
+
+            print()
+            print(
+                self._phase_name(
+                    phase
                 )
             )
 
 
-        return ranges
+            # se nella fase non sono stati trovati errori
+            if not phase_data["errors"]:
+
+                print(
+                    "Nessun errore"
+                )
+
+                continue
+
+
+            # stampo tutti gli errori trovati
+            for error_name, error_ranges in phase_data["errors"].items():
+
+                for start, end in error_ranges:
+
+                    if start == end:
+
+                        print(
+                            f"- {error_name} | "
+                            f"errore frame {start}"
+                        )
+
+                    else:
+
+                        print(
+                            f"- {error_name} | "
+                            f"errore frame {start}-{end}"
+                        )
+
+
+        print()
+        print(
+            f"========== FINE RIPETIZIONE "
+            f"{repetition_number} =========="
+        )
 
 
     def _phase_name(
@@ -338,16 +397,16 @@ class SquatAnalyzer:
     ):
 
         if phase == SquatPhase.STANDING:
-            return "FASE 0 - IN PIEDI"
+            return "STANDING"
 
         elif phase == SquatPhase.DESCENDING:
-            return "FASE DISCESA"
+            return "DESCENDING"
 
         elif phase == SquatPhase.BOTTOM:
-            return "FASE ACCOSCIATA"
+            return "BOTTOM"
 
         elif phase == SquatPhase.ASCENDING:
-            return "FASE RISALITA"
+            return "ASCENDING"
 
 
         return phase.value
@@ -355,12 +414,76 @@ class SquatAnalyzer:
 
     def finish_analysis(self):
 
-        # stampa anche l'ultima fase del video
-        # perché potrebbe non esserci un successivo
-        # cambio di fase che la faccia stampare
+        # se il video finisce durante una ripetizione
+        # salvo anche l'ultima fase analizzata
 
-        self._print_phase_errors(
-            self.current_phase
-        )
+        if self.current_rep is not None:
 
-        self.phase_frames = []
+            self._save_phase_errors(
+                self.current_phase
+            )
+
+            self.phase_frames = []
+
+
+            print()
+            print(
+                f"========== RIPETIZIONE "
+                f"{self.current_rep.number} "
+                f"INCOMPLETA =========="
+            )
+
+
+            phases = [
+                SquatPhase.STANDING,
+                SquatPhase.DESCENDING,
+                SquatPhase.BOTTOM,
+                SquatPhase.ASCENDING
+            ]
+
+
+            for phase in phases:
+
+                if phase not in self.rep_phases:
+                    continue
+
+
+                phase_data = self.rep_phases[
+                    phase
+                ]
+
+
+                print()
+                print(
+                    self._phase_name(
+                        phase
+                    )
+                )
+
+
+                if not phase_data["errors"]:
+
+                    print(
+                        "Nessun errore"
+                    )
+
+                    continue
+
+
+                for error_name, error_ranges in phase_data["errors"].items():
+
+                    for start, end in error_ranges:
+
+                        if start == end:
+
+                            print(
+                                f"- {error_name} | "
+                                f"errore frame {start}"
+                            )
+
+                        else:
+
+                            print(
+                                f"- {error_name} | "
+                                f"errore frame {start}-{end}"
+                            )
