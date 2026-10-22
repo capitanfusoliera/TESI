@@ -25,7 +25,11 @@ class SquatAnalyzer:
         # della fase attuale
         self.phase_frames = []
 
-        self.min_error_frames = {"knee_convergence": 6}
+        self.min_error_frames = {
+            "knee_convergence": 6,
+            "heel_lift": 6,
+            "heel_asymmetry": 6
+        }
 
         # contiene i risultati delle varie fasi
         # della ripetizione attuale
@@ -41,6 +45,10 @@ class SquatAnalyzer:
             self.current_phase
         )
 
+        self.error_manager.set_reference_heel_y(
+            body,
+            self.current_phase
+        )
 
         # controllo se deve cambiare fase
         new_phase = self.phase_detector.detect(
@@ -48,6 +56,20 @@ class SquatAnalyzer:
             self.current_phase
         )
 
+        # se passa direttamente da discesa a risalita
+        # significa che il bottom non è stato raggiunto
+
+        if (
+            self.current_phase == SquatPhase.DESCENDING
+            and
+            new_phase == SquatPhase.ASCENDING
+            and
+            self.current_rep is not None
+        ):
+
+            self.current_rep.errors[
+                "insufficient_depth"
+            ] = True
 
         # se la fase sta cambiando
         # salvo i risultati della fase appena terminata
@@ -73,10 +95,8 @@ class SquatAnalyzer:
                 )
 
 
-            # se passo da risalita a in piedi
-            # la ripetizione è terminata
             elif (
-                self.current_phase == SquatPhase.ASCENDING
+                self.current_phase != SquatPhase.STANDING
                 and
                 new_phase == SquatPhase.STANDING
                 and
@@ -143,6 +163,8 @@ class SquatAnalyzer:
     def _finish_rep(self, frame_number):
 
         self.current_rep.end_frame = frame_number
+
+
 
         self.completed_reps.append(
             self.current_rep

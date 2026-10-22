@@ -2,7 +2,7 @@
 # si sceglie una soglia e si controlla frame per frame
 # che la soglia non venga superata
 
-BARBELL_TILT_THRESHOLD_RATIO = 0.03
+BARBELL_TILT_THRESHOLD_RATIO = 0.025
 
 #riceve il i dati del frame e l'altezza dell'atleta in pixel
 def check_barbell_tilt(body, reference_body_height):
