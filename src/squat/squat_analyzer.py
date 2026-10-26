@@ -27,8 +27,11 @@ class SquatAnalyzer:
 
         self.min_error_frames = {
             "knee_convergence": 6,
-            "heel_lift": 6,
-            "heel_asymmetry": 6
+            "heel_lift": 1,
+            "heel_asymmetry": 6,
+            "knee_asymmetry": 6,
+            "barbell_position": 6,
+            "torso_inclination": 6
         }
 
         # contiene i risultati delle varie fasi
