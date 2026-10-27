@@ -7,13 +7,13 @@ from src.squat.repetition import Repetition, SquatPhase
 
 class SquatAnalyzer:
 
+    #come imput prende la fase degli squat e il gestore degli errori
     def __init__(self, phase_detector, error_manager):
 
         self.phase_detector = phase_detector
         self.error_manager = error_manager
 
         self.current_phase = SquatPhase.STANDING
-
         self.current_rep = None
 
         # numero di ripetizioni completate
@@ -21,10 +21,10 @@ class SquatAnalyzer:
 
         self.completed_reps = []
 
-        # contiene i risultati frame per frame
-        # della fase attuale
+        # contiene i risultati frame per frame della fase attuale
         self.phase_frames = []
 
+        #conta quanti frame contigui servono per dichiare un errore errore
         self.min_error_frames = {
             "knee_convergence": 6,
             "heel_lift": 1,
@@ -35,7 +35,6 @@ class SquatAnalyzer:
         }
 
         # contiene i risultati delle varie fasi
-        # della ripetizione attuale
         self.rep_phases = {}
 
 
@@ -43,25 +42,15 @@ class SquatAnalyzer:
 
         # salvo una volta sola l'altezza iniziale
         # della persona quando è in piedi
-        self.error_manager.set_reference_body_height(
-            body,
-            self.current_phase
-        )
+        self.error_manager.set_reference_body_height(body,self.current_phase)
 
-        self.error_manager.set_reference_heel_y(
-            body,
-            self.current_phase
-        )
+        self.error_manager.set_reference_heel_y(body,self.current_phase)
 
         # controllo se deve cambiare fase
-        new_phase = self.phase_detector.detect(
-            body,
-            self.current_phase
-        )
+        new_phase = self.phase_detector.detect(body,self.current_phase)
 
         # se passa direttamente da discesa a risalita
         # significa che il bottom non è stato raggiunto
-
         if (
             self.current_phase == SquatPhase.DESCENDING
             and
@@ -70,20 +59,15 @@ class SquatAnalyzer:
             self.current_rep is not None
         ):
 
-            self.current_rep.errors[
-                "insufficient_depth"
-            ] = True
+            self.current_rep.errors["insufficient_depth"] = True
 
         # se la fase sta cambiando
         # salvo i risultati della fase appena terminata
         if new_phase != self.current_phase:
 
-            self._save_phase_errors(
-                self.current_phase
-            )
+            self._save_phase_errors(self.current_phase)
 
             self.phase_frames = []
-
 
             # se passo da in piedi a discesa
             # inizia una nuova ripetizione
@@ -92,10 +76,7 @@ class SquatAnalyzer:
                 and
                 new_phase == SquatPhase.DESCENDING
             ):
-
-                self._start_rep(
-                    body.frame_number
-                )
+                self._start_rep(body.frame_number)
 
 
             elif (
@@ -106,9 +87,7 @@ class SquatAnalyzer:
                 self.current_rep is not None
             ):
 
-                self._finish_rep(
-                    body.frame_number
-                )
+                self._finish_rep(body.frame_number)
 
 
         # aggiorno la fase corrente
@@ -116,35 +95,20 @@ class SquatAnalyzer:
 
 
         # controllo gli errori
-        detected_errors = self.error_manager.check(
-            body=body,
-            phase=self.current_phase
-        )
-
+        detected_errors = self.error_manager.check(body=body,phase=self.current_phase)
 
         # salvo errori e frame della fase attuale
         self.phase_frames.append(
-            (
-                body.frame_number,
-                detected_errors
-            )
+            (body.frame_number,detected_errors)
         )
 
 
         # se esiste una ripetizione aperta
         if self.current_rep is not None:
-
-            self.current_rep.frames.append(
-                body
-            )
-
-            self._update_errors(
-                detected_errors
-            )
-
+            self.current_rep.frames.append(body)
+            self._update_errors(detected_errors)
 
     def _start_rep(self, frame_number):
-
         self.current_rep = Repetition(
             number=self.rep_count,
             start_frame=frame_number
