@@ -1,7 +1,8 @@
 import argparse
 import cv2
 import os
-
+import numpy as np
+from src.output.skeleton_correction import create_corrected_body
 from src.output.scheleton_ouput import create_skeleton_frame
 from src.mediapipe.mp_video_detector import detect_pose_video
 from src.body.body_models import build_body_model
@@ -29,20 +30,26 @@ def analyze_video(video_path):
     video_name = os.path.splitext(os.path.basename(video_path))[0]
     output_path = (f"outputs/{video_name}_analysis_control.mp4")
 
-    # percorso video scheltro
+    # percorso video scheltri
     skeleton_output_path = (f"outputs/{video_name}_skeleton.mp4")
+    corrected_skeleton_output_path = (f"outputs/{video_name}_corrected_skeleton.mp4")
 
     #controllo se sto esaminando lo stesso video
-    if os.path.exists(output_path) and os.path.exists(skeleton_output_path):
+    try:
 
-        try:
-            # se è il solito rimuovo il vecchio output
+        # se esiste rimuovo il vecchio output
+        if os.path.exists(output_path):
             os.remove(output_path)
+
+        if os.path.exists(skeleton_output_path):
             os.remove(skeleton_output_path)
 
-        except PermissionError:
-            print("ERRORE: il video di output è aperto")
-            return
+        if os.path.exists(corrected_skeleton_output_path):
+            os.remove(corrected_skeleton_output_path)
+
+    except PermissionError:
+        print("ERRORE: uno dei video di output è aperto")
+        return
 
 
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
@@ -55,21 +62,21 @@ def analyze_video(video_path):
 
 
     # creo il video dello scheletro per l'uotput
-    skeleton_video_writer = cv2.VideoWriter(skeleton_output_path, fourcc,
-        mediapipe_results["analysis_fps"],
-        (mediapipe_results["width"], mediapipe_results["height"])
-    )
+    skeleton_video_writer = cv2.VideoWriter(skeleton_output_path, fourcc,mediapipe_results["analysis_fps"],
+        (mediapipe_results["width"], mediapipe_results["height"]))
+
+    # creo il video dello scheletro corretto per l'output
+    corrected_skeleton_video_writer = cv2.VideoWriter(corrected_skeleton_output_path,fourcc,mediapipe_results["analysis_fps"],
+        (mediapipe_results["width"],mediapipe_results["height"]))
 
 
-    if not video_writer.isOpened() and not skeleton_video_writer.isOpened():
+    if (not video_writer.isOpened() or not skeleton_video_writer.isOpened() or not corrected_skeleton_video_writer.isOpened()):
         print("ERRORE: impossibile creare gli output")
         cap.release()
         video_writer.release()
+        skeleton_video_writer.release()
+        corrected_skeleton_video_writer.release()
         return
-
-    # ----------------------------------------------------
-    # CREATE ANALYSIS MODULES
-    # ----------------------------------------------------
 
     phase_detector = SquatPhaseDetector()
 
@@ -79,6 +86,10 @@ def analyze_video(video_path):
         phase_detector=phase_detector,
         error_manager=error_manager
     )
+
+    # salvo i bodymodel per creare successivamente
+    # lo scheletro corretto
+    bodies_by_frame = {}
 
     #per ogni frame analizzato da mediapipe 
     for frame_data in mediapipe_results["frames"]:
@@ -110,17 +121,22 @@ def analyze_video(video_path):
         #creo il bodymodel
         body = build_body_model(mediapipe_landmarks=landmarks, frame_number=frame_number, time_ms=frame_data["time_ms"])
 
-
         #inizio l'analisi
-        squat_analyzer.update(body)
+        detected_errors = squat_analyzer.update(body)
 
+        # salvo il bodymodel per creare successivamente
+        # lo scheletro corretto
+        bodies_by_frame[frame_number] = body
 
         #creo il video dello scheletro
-        skeleton_frame = create_skeleton_frame(body, mediapipe_results["width"], mediapipe_results["height"])
+        skeleton_frame = create_skeleton_frame(body,mediapipe_results["width"],mediapipe_results["height"],detected_errors)
 
         skeleton_video_writer.write(skeleton_frame)
 
+        #creo il video dello scheletro corretto
+        skeleton_frame = create_skeleton_frame(body,mediapipe_results["width"],mediapipe_results["height"],detected_errors)
 
+        skeleton_video_writer.write(skeleton_frame)
         # disegno i landmark
         for landmark_name, landmark in landmarks.items():
 
@@ -170,14 +186,86 @@ def analyze_video(video_path):
     # il video è termintato senza che l'utente sia in stending
     squat_analyzer.finish_analysis()
 
+
+    # creo lo scheletro corretto dopo aver
+    # validato tutti gli errori
+
+    for frame_data in mediapipe_results["frames"]:
+
+        frame_number = frame_data["frame"]
+
+
+        # se mediapipe non ha trovato il corpo
+        # creo un frame nero
+
+        if frame_number not in bodies_by_frame:
+
+            black_frame = np.zeros(
+                (
+                    mediapipe_results["height"],
+                    mediapipe_results["width"],
+                    3
+                ),
+                dtype=np.uint8
+            )
+
+            corrected_skeleton_video_writer.write(
+                black_frame
+            )
+
+            continue
+
+
+        body = bodies_by_frame[
+            frame_number
+        ]
+
+
+        # recupero solamente gli errori
+        # validati per questo frame
+
+        validated_errors = (
+            squat_analyzer
+            .validated_errors_by_frame
+            .get(
+                frame_number,
+                {}
+            )
+        )
+
+
+        # creo il body corretto
+
+        corrected_body = create_corrected_body(
+            body,
+            validated_errors,
+            error_manager
+        )
+
+
+        # creo il frame dello scheletro corretto
+
+        corrected_skeleton_frame = create_skeleton_frame(
+            corrected_body,
+            mediapipe_results["width"],
+            mediapipe_results["height"],
+            {}
+        )
+
+
+        corrected_skeleton_video_writer.write(
+            corrected_skeleton_frame
+        )
+
+
     cap.release()
     video_writer.release()
     skeleton_video_writer.release()
-
-
+    corrected_skeleton_video_writer.release()
     print()
     print(f"Video di controllo salvato in: " f"{output_path}")
     print(f"Video skeleton salvato in: "f"{skeleton_output_path}")
+    print(f"Video skeleton corretto salvato in: "f"{corrected_skeleton_output_path}")
 
 
 #questo è il metodo che si occupa di confrontare i marker con i risultati di mediapipe

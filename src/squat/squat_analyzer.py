@@ -21,6 +21,10 @@ class SquatAnalyzer:
 
         self.completed_reps = []
 
+        # contiene gli errori validati
+        # per ogni frame
+        self.validated_errors_by_frame = {}
+
         # contiene i risultati frame per frame della fase attuale
         self.phase_frames = []
 
@@ -45,6 +49,8 @@ class SquatAnalyzer:
         self.error_manager.set_reference_body_height(body,self.current_phase)
 
         self.error_manager.set_reference_heel_y(body,self.current_phase)
+
+        self.error_manager.set_reference_torso_length(body,self.current_phase)
 
         # controllo se deve cambiare fase
         new_phase = self.phase_detector.detect(body,self.current_phase)
@@ -107,6 +113,8 @@ class SquatAnalyzer:
         if self.current_rep is not None:
             self.current_rep.frames.append(body)
             self._update_errors(detected_errors)
+
+        return detected_errors
 
     def _start_rep(self, frame_number):
         self.current_rep = Repetition(
@@ -218,6 +226,40 @@ class SquatAnalyzer:
                 phase_errors[
                     error_name
                 ] = error_ranges
+
+
+                # salvo l'errore nei singoli frame
+                # appartenenti agli intervalli validati
+                for frame_number, errors in self.phase_frames:
+
+                    for start_frame, end_frame in error_ranges:
+
+                        if (
+                            start_frame
+                            <=
+                            frame_number
+                            <=
+                            end_frame
+                        ):
+
+                            if (
+                                frame_number
+                                not in
+                                self.validated_errors_by_frame
+                            ):
+
+                                self.validated_errors_by_frame[
+                                    frame_number
+                                ] = {}
+
+
+                            self.validated_errors_by_frame[
+                                frame_number
+                            ][
+                                error_name
+                            ] = True
+
+                            break
 
 
         self.rep_phases[
