@@ -50,6 +50,8 @@ class SquatAnalyzer:
 
         self.error_manager.set_reference_heel_y(body,self.current_phase)
 
+        self.error_manager.set_reference_heel_hip_height(body, self.current_phase)
+
         self.error_manager.set_reference_torso_length(body,self.current_phase)
 
         # controllo se deve cambiare fase
@@ -113,6 +115,9 @@ class SquatAnalyzer:
         if self.current_rep is not None:
             self.current_rep.frames.append(body)
             self._update_errors(detected_errors)
+
+
+        
 
         return detected_errors
 

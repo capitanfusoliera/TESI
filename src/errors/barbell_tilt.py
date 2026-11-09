@@ -2,36 +2,23 @@
 # si sceglie una soglia e si controlla frame per frame
 # che la soglia non venga superata
 
-BARBELL_TILT_THRESHOLD_RATIO = 0.025
+BARBELL_TILT_THRESHOLD_RATIO = 0.25
 
-#riceve il i dati del frame e l'altezza dell'atleta in pixel
 def check_barbell_tilt(body, reference_body_height):
-
     left_wrist = body.landmarks.polso_sinistro
     right_wrist = body.landmarks.polso_destro
 
-    left_ankle = body.landmarks.caviglia_sinistra
-    right_ankle = body.landmarks.caviglia_destra
-
-
-    # differenza in pixel fra i polsi
+    # differenza in pixel fra i polsi sull'asse y
     wrist_delta_y = abs(left_wrist.y - right_wrist.y)
 
-    # differenza in pixel fra le caviglie
-    ankle_delta_y = abs(left_ankle.y - right_ankle.y)
+    # distanza in pixel fra i polsi sull'asse x
+    wrist_delta_x = abs(left_wrist.x - right_wrist.x)
 
+    # calcolo la differenza massima in altezza
+    # consentita in base alla larghezza della presa
+    threshold = wrist_delta_x * BARBELL_TILT_THRESHOLD_RATIO
 
-    if reference_body_height is None:
-        return False
+    if wrist_delta_y > threshold:
+        return True
 
-    if reference_body_height == 0:
-        return False
-
-
-    # confronto la differenza dei polsi
-    # con l'altezza iniziale della persona in piedi
-    wrist_difference_ratio = (wrist_delta_y/reference_body_height)
-
-    detected = (wrist_difference_ratio>BARBELL_TILT_THRESHOLD_RATIO)
-
-    return detected
+    return False

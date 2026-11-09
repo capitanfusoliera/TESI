@@ -16,13 +16,14 @@ class ErrorManager:
         self.reference_body_height = None
         self.reference_left_heel_y = None
         self.reference_right_heel_y = None
+        self.reference_heel_hip_height = None
 
         self.phase_checks = {
 
             SquatPhase.STANDING: [
                 ("barbell_tilt", self.check_barbell_tilt),
                 ("heel_asymmetry", self.check_heel_asymmetry),
-                ("heel_asymmetry", self.check_heel_asymmetry),
+                ("knee_asymmetry", self.check_knee_asymmetry),
                 ("barbell_position", self.check_barbell_position)
             ],
 
@@ -31,7 +32,7 @@ class ErrorManager:
                 ("knee_convergence", self.check_knee_convergence),
                 ("heel_lift", self.check_heel_lift),
                 ("heel_asymmetry", self.check_heel_asymmetry),
-                ("heel_asymmetry", self.check_heel_asymmetry),
+                ("knee_asymmetry", self.check_knee_asymmetry),
                 ("torso_inclination", self.check_torso_inclination)
             ],
 
@@ -40,7 +41,7 @@ class ErrorManager:
                 ("knee_convergence", self.check_knee_convergence),
                 ("heel_lift", self.check_heel_lift),
                 ("heel_asymmetry", self.check_heel_asymmetry),
-                ("heel_asymmetry", self.check_heel_asymmetry),
+                ("knee_asymmetry", self.check_knee_asymmetry),
                 ("torso_inclination", self.check_torso_inclination)
             ],
 
@@ -49,7 +50,7 @@ class ErrorManager:
                 ("knee_convergence", self.check_knee_convergence),
                 ("heel_lift", self.check_heel_lift),
                 ("heel_asymmetry", self.check_heel_asymmetry),
-                ("heel_asymmetry", self.check_heel_asymmetry),
+                ("knee_asymmetry", self.check_knee_asymmetry),
                 ("torso_inclination", self.check_torso_inclination)
             ]
         }
@@ -81,7 +82,7 @@ class ErrorManager:
 
     def check_barbell_tilt(self, body):
 
-        return check_barbell_tilt(body,self.reference_body_height)
+        return check_barbell_tilt(body)
 
 
     def check_knee_convergence(self, body):
@@ -114,13 +115,33 @@ class ErrorManager:
                 body.landmarks.tallone_destro.y
             )
 
+    def set_reference_heel_hip_height(self, body, phase):
+
+        #se il dato non compare e siamo in standing, lo calcolo e lo salvo come riferimento
+        if (self.reference_heel_hip_height is None and phase == SquatPhase.STANDING):
+
+            left_hip = body.landmarks.anca_sinistra
+            right_hip = body.landmarks.anca_destra
+
+            left_heel = body.landmarks.tallone_sinistro
+            right_heel = body.landmarks.tallone_destro
+
+            # altezza tallone anca sinistra
+            left_heel_hip_height = abs(left_heel.y - left_hip.y)
+
+            # altezza tallone anca destra
+            right_heel_hip_height = abs(right_heel.y - right_hip.y)
+
+            # faccio la media delle due altezze
+            self.reference_heel_hip_height = (left_heel_hip_height + right_heel_hip_height) / 2
+
     def check_heel_asymmetry(self, body):
 
-        return check_heel_asymmetry(body)
+        return check_heel_asymmetry(body, self.reference_heel_hip_height)
 
     def check_knee_asymmetry(self, body):
 
-        return check_knee_asymmetry(body)
+        return check_knee_asymmetry(body, self.reference_heel_hip_height)
 
     def check_barbell_position(self, body):
 
@@ -129,26 +150,16 @@ class ErrorManager:
             self.reference_body_height
         )
 
-    def set_reference_torso_length(
-        self,
-        body,
-        phase
-    ):
+    # prendendo la differenza di altezza fra il punto medio delle spalle e il punto medio delle anche 
+    # creiamo un dato contenente l'altezza del torso dell'utente nella fase di standing
+    def set_reference_torso_length(self,body,phase):
 
-        if (
-            self.reference_torso_length is None
-            and
-            phase == SquatPhase.STANDING
-        ):
+        if (self.reference_torso_length is None and phase == SquatPhase.STANDING):
 
             shoulder_center = body.virtual_points.centro_spalle
             hip_center = body.virtual_points.centro_anche
 
-
-            self.reference_torso_length = math.hypot(
-                shoulder_center.x - hip_center.x,
-                shoulder_center.y - hip_center.y
-            )
+            self.reference_torso_length = math.hypot(shoulder_center.x - hip_center.x,shoulder_center.y - hip_center.y)
 
     def check_torso_inclination(self, body):
 
