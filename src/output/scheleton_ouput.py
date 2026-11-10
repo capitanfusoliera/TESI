@@ -8,7 +8,7 @@ BONE_COLOR = (255, 255, 255)
 JOINT_COLOR = (0, 255, 0)
 ERROR_COLOR = (0, 0, 255)
 
-
+#controllo l'esistenza del landmark
 def _get_point(landmarks, point_name):
 
     if not hasattr(landmarks, point_name):
@@ -16,128 +16,57 @@ def _get_point(landmarks, point_name):
 
     point = getattr(landmarks, point_name)
 
-    return (
-        int(point.x),
-        int(point.y)
-    )
+    return (int(point.x),int(point.y))
 
+#costruisco un area a cerchio per ogni landmark 
+def _draw_point(frame,landmarks,point_name,color,radius=6):
 
-def _draw_point(
-    frame,
-    landmarks,
-    point_name,
-    color,
-    radius=6
-):
-
-    point = _get_point(
-        landmarks,
-        point_name
-    )
+    point = _get_point(landmarks,point_name)
 
     if point is None:
         return
 
-    cv2.circle(
-        frame,
-        point,
-        radius,
-        color,
-        -1
-    )
+    cv2.circle(frame,point,radius,color,-1)
 
+#presi due landmark disegno una linea tra di essi
+def _draw_line(frame,landmarks,point_a,point_b,color,thickness=3):
 
-def _draw_line(
-    frame,
-    landmarks,
-    point_a,
-    point_b,
-    color,
-    thickness=3
-):
+    a = _get_point(landmarks,point_a)
 
-    a = _get_point(
-        landmarks,
-        point_a
-    )
-
-    b = _get_point(
-        landmarks,
-        point_b
-    )
+    b = _get_point(landmarks,point_b)
 
     if a is None or b is None:
         return
 
-    cv2.line(
-        frame,
-        a,
-        b,
-        color,
-        thickness
-    )
+    cv2.line(frame,a,b,color,thickness)
 
+#prende due landmarks e restituisce il punto medio tra di essi
+#uitilizzato per i punti immaginari che creano la colonna vertebrale
+def _get_midpoint(landmarks,point_a,point_b):
 
-def _get_midpoint(
-    landmarks,
-    point_a,
-    point_b
-):
+    a = _get_point(landmarks,point_a)
 
-    a = _get_point(
-        landmarks,
-        point_a
-    )
-
-    b = _get_point(
-        landmarks,
-        point_b
-    )
+    b = _get_point(landmarks,point_b)
 
     if a is None or b is None:
         return None
 
-    return (
-        int((a[0] + b[0]) / 2),
-        int((a[1] + b[1]) / 2)
-    )
+    return (int((a[0] + b[0]) / 2),int((a[1] + b[1]) / 2))
 
+#PERCHE' 
+def _draw_trunk_center_line(frame,landmarks,color,thickness=3):
 
-def _draw_trunk_center_line(
-    frame,
-    landmarks,
-    color,
-    thickness=3
-):
+    shoulder_center = _get_midpoint(landmarks,"spalla_sinistra","spalla_destra")
 
-    shoulder_center = _get_midpoint(
-        landmarks,
-        "spalla_sinistra",
-        "spalla_destra"
-    )
-
-    hip_center = _get_midpoint(
-        landmarks,
-        "anca_sinistra",
-        "anca_destra"
-    )
+    hip_center = _get_midpoint(landmarks,"anca_sinistra","anca_destra")
 
     if shoulder_center is None or hip_center is None:
         return
 
-    cv2.line(
-        frame,
-        shoulder_center,
-        hip_center,
-        color,
-        thickness
-    )
+    cv2.line(frame,shoulder_center,hip_center,color,thickness)
 
 
-def _draw_base_skeleton(
-    frame,
-    landmarks
-):
+def _draw_base_skeleton(frame,landmarks):
 
     base_lines = [
 
@@ -176,21 +105,9 @@ def _draw_base_skeleton(
 
     for point_a, point_b in base_lines:
 
-        _draw_line(
-            frame,
-            landmarks,
-            point_a,
-            point_b,
-            BONE_COLOR,
-            3
-        )
+        _draw_line(frame,landmarks,point_a,point_b,BONE_COLOR,3)
 
-    _draw_trunk_center_line(
-        frame,
-        landmarks,
-        BONE_COLOR,
-        3
-    )
+    _draw_trunk_center_line(frame,landmarks,BONE_COLOR,3)
 
     base_points = [
         "naso",

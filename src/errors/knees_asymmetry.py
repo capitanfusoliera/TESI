@@ -2,7 +2,7 @@
 # in maniera abbastanza simmetrica rispetto al centro del bacino
 
 #moltiplicatore dell'errore di asimmetria delle ginocchia rispetto all'altezza tallone anca
-KNEE_ASYMMETRY_THRESHOLD_RATIO = 0.02
+KNEE_ASYMMETRY_THRESHOLD_RATIO = 0.04
 
 
 def check_knee_asymmetry(body,reference_heel_hip_height):

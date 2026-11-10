@@ -11,7 +11,7 @@ from src.squat.squat_analyzer import SquatAnalyzer
 from src.errors.error_manager import ErrorManager
 from src.validation.marker_video_detector import detect_markers_video
 from src.validation.video_comparison import create_validation_outputs
-
+from src.ml.dataset_builder import save_video_dataset
 
 # Indirizzo modello mediaPipe
 MODEL_PATH = "models/pose_landmarker_full.task"
@@ -91,7 +91,7 @@ def analyze_video(video_path):
     # lo scheletro corretto
     bodies_by_frame = {}
 
-    #per ogni frame analizzato da mediapipe 
+    #per ogni frame analizzato da mediapipe
     for frame_data in mediapipe_results["frames"]:
 
         # prendo frame e punti corporei
@@ -133,10 +133,6 @@ def analyze_video(video_path):
 
         skeleton_video_writer.write(skeleton_frame)
 
-        #creo il video dello scheletro corretto
-        skeleton_frame = create_skeleton_frame(body,mediapipe_results["width"],mediapipe_results["height"],detected_errors)
-
-        skeleton_video_writer.write(skeleton_frame)
         # disegno i landmark
         for landmark_name, landmark in landmarks.items():
 
@@ -262,10 +258,77 @@ def analyze_video(video_path):
     video_writer.release()
     skeleton_video_writer.release()
     corrected_skeleton_video_writer.release()
+
     print()
     print(f"Video di controllo salvato in: " f"{output_path}")
     print(f"Video skeleton salvato in: "f"{skeleton_output_path}")
     print(f"Video skeleton corretto salvato in: "f"{corrected_skeleton_output_path}")
+
+    return squat_analyzer
+
+
+
+#questo metodo crea il dataset per il machine learning
+def create_dataset(video_path):
+
+    #tramite mediaPipe analizzo il video passato per parametro
+    mediapipe_results = detect_pose_video(video_path=video_path, model_path=MODEL_PATH, target_fps=60)
+
+
+    phase_detector = SquatPhaseDetector()
+
+    error_manager = ErrorManager()
+
+
+    # creo lo squat analyzer solamente
+    # per riconoscere le ripetizioni
+    # senza effettuare l'analisi degli errori
+    squat_analyzer = SquatAnalyzer(
+        phase_detector=phase_detector,
+        error_manager=error_manager,
+        analyze_errors=False
+    )
+
+
+    #per ogni frame analizzato da mediapipe
+    for frame_data in mediapipe_results["frames"]:
+
+        frame_number = frame_data["frame"]
+
+        landmarks = frame_data["landmarks"]
+
+
+        # se mediapipe non trova il corpo
+        # passo al frame successivo
+        if not landmarks:
+            continue
+
+
+        #creo il bodymodel
+        body = build_body_model(
+            mediapipe_landmarks=landmarks,
+            frame_number=frame_number,
+            time_ms=frame_data["time_ms"]
+        )
+
+
+        # passo il bodymodel allo squat analyzer
+        # solamente per riconoscere
+        # le varie ripetizioni
+        squat_analyzer.update(body)
+
+
+    # chiudo eventuali analisi rimaste aperte
+    squat_analyzer.finish_analysis()
+
+
+    # salvo tutte le ripetizioni trovate
+    # dentro il json del video
+    save_video_dataset(
+        video_path,
+        squat_analyzer.completed_reps
+    )
+
 
 
 #questo è il metodo che si occupa di confrontare i marker con i risultati di mediapipe
@@ -278,11 +341,12 @@ def validation_video(video_path):
     create_validation_outputs(marker_results,mediapipe_results)
 
 
+
 def main():
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("mode",choices=["analyze","validation"])
+    parser.add_argument("mode",choices=["analyze","validation","dataset"])
 
     parser.add_argument("--video",required=True)
 
@@ -299,6 +363,13 @@ def main():
     elif args.mode == "validation":
 
         validation_video(args.video)
+
+
+    # creo il dataset per il machine learning
+    elif args.mode == "dataset":
+
+        create_dataset(args.video)
+
 
 
 # faccio partire il main

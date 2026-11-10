@@ -4,7 +4,7 @@
 
 import math
 
-TORSO_INCLINATION_THRESHOLD = 45
+TORSO_INCLINATION_THRESHOLD = 50
 
 
 def check_torso_inclination(body, reference_torso_length):
