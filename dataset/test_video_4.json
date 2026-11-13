@@ -6,7 +6,7 @@
             "repetition": 0,
             "start_frame": 112,
             "end_frame": 331,
-            "label": null,
+            "label": "correct",
             "frames": [
                 {
                     "frame": 112,
@@ -16220,7 +16220,7 @@
             "repetition": 1,
             "start_frame": 482,
             "end_frame": 684,
-            "label": null,
+            "label": "correct",
             "frames": [
                 {
                     "frame": 482,
@@ -31176,7 +31176,7 @@
             "repetition": 2,
             "start_frame": 837,
             "end_frame": 1057,
-            "label": null,
+            "label": "correct",
             "frames": [
                 {
                     "frame": 837,
@@ -47464,7 +47464,7 @@
             "repetition": 3,
             "start_frame": 1234,
             "end_frame": 1459,
-            "label": null,
+            "label": "correct",
             "frames": [
                 {
                     "frame": 1234,

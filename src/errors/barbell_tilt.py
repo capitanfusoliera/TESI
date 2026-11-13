@@ -2,7 +2,7 @@
 # si sceglie una soglia e si controlla frame per frame
 # che la soglia non venga superata
 
-BARBELL_TILT_THRESHOLD_RATIO = 0.025
+BARBELL_TILT_THRESHOLD_RATIO = 0.05
 
 #riceve i dati del frame
 def check_barbell_tilt(body):

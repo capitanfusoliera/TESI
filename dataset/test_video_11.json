@@ -6,7 +6,7 @@
             "repetition": 0,
             "start_frame": 28,
             "end_frame": 148,
-            "label": null,
+            "label": "correct",
             "frames": [
                 {
                     "frame": 28,

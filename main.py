@@ -12,10 +12,13 @@ from src.errors.error_manager import ErrorManager
 from src.validation.marker_video_detector import detect_markers_video
 from src.validation.video_comparison import create_validation_outputs
 from src.ml.dataset_builder import save_video_dataset
+from src.ml.squat_classifier import SquatClassifier
 
 # Indirizzo modello mediaPipe
 MODEL_PATH = "models/pose_landmarker_full.task"
 
+# Indirizzo modello machine learning
+ML_MODEL_PATH = "models/squat_classifier.pkl"
 
 def analyze_video(video_path):
 
@@ -181,6 +184,47 @@ def analyze_video(video_path):
     # metto questa chiusura fuori per situazioni in cui
     # il video è termintato senza che l'utente sia in stending
     squat_analyzer.finish_analysis()
+
+    # creo il classificatore machine learning
+    ml_classifier = SquatClassifier(
+        ML_MODEL_PATH
+    )
+
+
+    print()
+    print(
+        "========== CLASSIFICAZIONE MACHINE LEARNING =========="
+    )
+
+
+    # classifico tutte le ripetizioni
+    # completate durante il video
+    for repetition in squat_analyzer.completed_reps:
+
+        prediction = ml_classifier.predict(
+            repetition
+        )
+
+
+        if prediction is None:
+
+            print(
+                f"Ripetizione {repetition.number}: "
+                f"impossibile classificare"
+            )
+
+            continue
+
+
+        print(
+            f"Ripetizione {repetition.number}: "
+            f"{prediction.upper()}"
+        )
+
+
+    print(
+        "======================================================="
+    )
 
 
     # creo lo scheletro corretto dopo aver
