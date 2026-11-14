@@ -1,3 +1,9 @@
+
+#per rendere ogni squat della solita l'unghezza 
+#prende un quantitativo di frame fissato da ogni esecuzione
+#normalizza le varie proporizioni della persona 
+#in questo modo vengono evitati problemi relativi alla distanza
+
 import numpy as np
 
 

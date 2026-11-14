@@ -1,3 +1,7 @@
+#prende dal dataset tutti i file utilizzabili
+#controlla la label e esegue l'algoritmo
+
+
 import json
 import os
 import joblib

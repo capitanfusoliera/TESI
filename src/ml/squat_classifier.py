@@ -1,3 +1,6 @@
+#utilizza il modello allenato
+#per controllare la correttezza degli squat
+
 import os
 import joblib
 

@@ -1,3 +1,7 @@
+# crea il file json prendendo ogni frame
+# e per ogni frame i 17 landmark corporei
+
+
 import json
 import os
 
