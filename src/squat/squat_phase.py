@@ -6,7 +6,7 @@ class SquatPhaseDetector:
     def __init__(self):
 
         # soglia per passare da in piedi a discesa
-        self.standing_threshold = 175
+        self.standing_threshold = 170
 
         # soglia per entrare nella fase di accosciata
         self.bottom_threshold = 110
