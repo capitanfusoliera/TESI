@@ -5,9 +5,9 @@ from src.errors.barbell_position import BARBELL_POSITION_THRESHOLD_RATIO
 from src.errors.torso_inclination import TORSO_INCLINATION_THRESHOLD
 
 
+
 # aggiorna i punti virtuali dopo aver modificato
 # alcuni landmark del corpo
-
 def _update_virtual_points(body):
 
     left_shoulder = body.landmarks.spalla_sinistra
@@ -38,7 +38,6 @@ def _update_virtual_points(body):
 
 # sposta un punto mantenendo invariato
 # tutto il resto
-
 def _move_point(
     point,
     delta_x=0,
@@ -55,19 +54,23 @@ def _move_point(
 # ----------------------------------------------------
 
 # se i due polsi sono ad altezze diverse
-# li porto alla stessa altezza media
-
+# li porto alla stessa altezza
 def _correct_barbell_tilt(body):
 
     left_wrist = body.landmarks.polso_sinistro
     right_wrist = body.landmarks.polso_destro
 
 
+    # altezza media dei due polsi
     wrist_center_y = (
-        left_wrist.y + right_wrist.y
+        left_wrist.y
+        +
+        right_wrist.y
     ) / 2
 
 
+    # mettendo i due polsi alla stessa altezza
+    # la differenza verticale diventa zero
     left_wrist.y = wrist_center_y
 
     right_wrist.y = wrist_center_y
@@ -78,9 +81,10 @@ def _correct_barbell_tilt(body):
 # BARBELL POSITION
 # ----------------------------------------------------
 
-# se i polsi sono troppo alti rispetto alle spalle
-# li riporto all'altezza massima consentita
-
+# se il bilanciere è troppo alto
+# rispetto alle spalle
+# abbasso entrambi i polsi
+# fino a portarli dentro la soglia corretta
 def _correct_barbell_position(
     body,
     reference_body_height
@@ -101,44 +105,58 @@ def _correct_barbell_position(
 
 
     wrist_center_y = (
-        left_wrist.y + right_wrist.y
+        left_wrist.y
+        +
+        right_wrist.y
     ) / 2
+
 
     shoulder_center_y = (
-        left_shoulder.y + right_shoulder.y
+        left_shoulder.y
+        +
+        right_shoulder.y
     ) / 2
 
 
-    # posizione più alta consentita
-    # ai polsi rispetto alle spalle
+    # soglia utilizzata anche
+    # nel controllo dell'errore
+    threshold = (
+        reference_body_height
+        *
+        BARBELL_POSITION_THRESHOLD_RATIO
+    )
 
-    allowed_wrist_y = (
-        shoulder_center_y
-        -
-        (
-            BARBELL_POSITION_THRESHOLD_RATIO
-            *
-            reference_body_height
-        )
+
+    # non porto il bilanciere esattamente
+    # sul limite ma leggermente
+    # dentro la zona corretta
+    corrected_difference = (
+        threshold
+        *
+        0.90
     )
 
 
     # y aumenta andando verso il basso
-    # quindi un valore minore significa
-    # che i polsi sono troppo in alto
-
-    if wrist_center_y < allowed_wrist_y:
-
-        correction_y = (
-            allowed_wrist_y
-            -
-            wrist_center_y
-        )
+    corrected_wrist_y = (
+        shoulder_center_y
+        -
+        corrected_difference
+    )
 
 
-        left_wrist.y += correction_y
+    correction_y = (
+        corrected_wrist_y
+        -
+        wrist_center_y
+    )
 
-        right_wrist.y += correction_y
+
+    # sposto entrambi i polsi
+    # della stessa quantità
+    left_wrist.y += correction_y
+
+    right_wrist.y += correction_y
 
 
 
@@ -146,9 +164,9 @@ def _correct_barbell_position(
 # KNEES
 # ----------------------------------------------------
 
-# corregge sia la convergenza delle ginocchia
-# sia l'asimmetria fra ginocchio destro e sinistro
-
+# corregge la convergenza delle ginocchia
+# e l'asimmetria fra ginocchio destro
+# e ginocchio sinistro
 def _correct_knees(body):
 
     hip_center = body.virtual_points.centro_anche
@@ -160,44 +178,69 @@ def _correct_knees(body):
     right_knee = body.landmarks.ginocchio_destro
 
 
+    # distanza attuale delle ginocchia
+    # rispetto al centro del bacino
     left_distance = abs(
-        left_knee.x - hip_center.x
+        left_knee.x
+        -
+        hip_center.x
     )
 
     right_distance = abs(
-        right_knee.x - hip_center.x
+        right_knee.x
+        -
+        hip_center.x
     )
 
 
-    # distanza media attuale delle ginocchia
-    # rispetto al centro del bacino
-
+    # uso la distanza media
+    # in modo da rendere le due ginocchia
+    # perfettamente simmetriche
     average_distance = (
-        left_distance + right_distance
+        left_distance
+        +
+        right_distance
     ) / 2
 
 
-    # evito che la correzione lasci
-    # le ginocchia dentro il range delle anche
-
+    # calcolo la larghezza delle anche
     hip_width = abs(
-        left_hip.x - right_hip.x
+        left_hip.x
+        -
+        right_hip.x
     )
 
+
+    # il limite della convergenza
+    # corrisponde alla metà
+    # della larghezza delle anche
     minimum_distance = (
-        hip_width / 2
-    ) * 1.05
+        hip_width
+        /
+        2
+    )
 
 
+    # porto le ginocchia leggermente
+    # fuori dal limite delle anche
+    safe_distance = (
+        minimum_distance
+        *
+        1.10
+    )
+
+
+    # se la distanza media attuale
+    # è già maggiore utilizzo quella,
+    # altrimenti utilizzo quella sicura
     corrected_distance = max(
         average_distance,
-        minimum_distance
+        safe_distance
     )
 
 
-    # utilizzo le anche per capire
-    # da quale lato si trova ogni gamba
-
+    # capisco da quale lato
+    # si trova ogni gamba
     if left_hip.x < hip_center.x:
 
         left_sign = -1
@@ -216,16 +259,24 @@ def _correct_knees(body):
         right_sign = 1
 
 
+    # porto entrambe le ginocchia
+    # alla stessa distanza dal centro
+    # del bacino
     left_knee.x = (
         hip_center.x
         +
-        left_sign * corrected_distance
+        left_sign
+        *
+        corrected_distance
     )
+
 
     right_knee.x = (
         hip_center.x
         +
-        right_sign * corrected_distance
+        right_sign
+        *
+        corrected_distance
     )
 
 
@@ -234,9 +285,8 @@ def _correct_knees(body):
 # HEELS ASYMMETRY
 # ----------------------------------------------------
 
-# posiziona i due piedi in maniera simmetrica
-# rispetto al centro del bacino
-
+# corregge la posizione asimmetrica
+# dei piedi rispetto al centro del bacino
 def _correct_heel_asymmetry(body):
 
     hip_center = body.virtual_points.centro_anche
@@ -248,20 +298,32 @@ def _correct_heel_asymmetry(body):
     right_heel = body.landmarks.tallone_destro
 
 
+    # distanza dei due talloni
+    # rispetto al centro del bacino
     left_distance = abs(
-        left_heel.x - hip_center.x
+        left_heel.x
+        -
+        hip_center.x
     )
 
     right_distance = abs(
-        right_heel.x - hip_center.x
+        right_heel.x
+        -
+        hip_center.x
     )
 
 
+    # porto i due piedi
+    # alla stessa distanza
     corrected_distance = (
-        left_distance + right_distance
+        left_distance
+        +
+        right_distance
     ) / 2
 
 
+    # determino da quale lato
+    # deve stare ogni piede
     if left_hip.x < hip_center.x:
 
         left_sign = -1
@@ -283,16 +345,23 @@ def _correct_heel_asymmetry(body):
     corrected_left_x = (
         hip_center.x
         +
-        left_sign * corrected_distance
+        left_sign
+        *
+        corrected_distance
     )
+
 
     corrected_right_x = (
         hip_center.x
         +
-        right_sign * corrected_distance
+        right_sign
+        *
+        corrected_distance
     )
 
 
+    # calcolo quanto deve spostarsi
+    # ciascun piede
     left_correction_x = (
         corrected_left_x
         -
@@ -308,7 +377,7 @@ def _correct_heel_asymmetry(body):
 
     # sposto tutto il piede sinistro
     # della stessa quantità
-
+    # per non deformarlo
     _move_point(
         body.landmarks.tallone_sinistro,
         delta_x=left_correction_x
@@ -327,7 +396,6 @@ def _correct_heel_asymmetry(body):
 
     # sposto tutto il piede destro
     # della stessa quantità
-
     _move_point(
         body.landmarks.tallone_destro,
         delta_x=right_correction_x
@@ -349,9 +417,9 @@ def _correct_heel_asymmetry(body):
 # HEEL LIFT
 # ----------------------------------------------------
 
-# riporta il tallone alla posizione verticale
-# salvata inizialmente
-
+# se viene rilevato un sollevamento
+# del tallone lo riporto
+# all'altezza iniziale di riferimento
 def _correct_heel_lift(
     body,
     reference_left_heel_y,
@@ -370,8 +438,9 @@ def _correct_heel_lift(
     right_heel = body.landmarks.tallone_destro
 
 
-    # correggo solamente se il tallone
-    # si trova più in alto del riferimento
+    # y cresce andando verso il basso
+    # quindi se il valore è minore
+    # il tallone è più alto
 
     if left_heel.y < reference_left_heel_y:
 
@@ -392,10 +461,9 @@ def _correct_heel_lift(
 # TORSO INCLINATION
 # ----------------------------------------------------
 
-# se la lunghezza apparente del torso
-# indica un'inclinazione superiore alla soglia
-# riporto il torso alla massima inclinazione consentita
-
+# corregge l'inclinazione eccessiva
+# del torso riportando la sua
+# lunghezza apparente dentro la soglia
 def _correct_torso_inclination(
     body,
     reference_torso_length
@@ -413,11 +481,15 @@ def _correct_torso_inclination(
 
 
     delta_x = (
-        shoulder_center.x - hip_center.x
+        shoulder_center.x
+        -
+        hip_center.x
     )
 
     delta_y = (
-        shoulder_center.y - hip_center.y
+        shoulder_center.y
+        -
+        hip_center.y
     )
 
 
@@ -431,27 +503,48 @@ def _correct_torso_inclination(
         return
 
 
-    # lunghezza minima che il torso deve avere
-    # nell'immagine per non superare
-    # l'inclinazione massima consentita
+    # la soglia dell'errore è 50 gradi
+    # porto il torso a 45 gradi
+    # in modo da stare dentro
+    # il range corretto
+    corrected_inclination = (
+        TORSO_INCLINATION_THRESHOLD
+        -
+        5
+    )
 
-    minimum_torso_length = (
+
+    # calcolo la lunghezza apparente
+    # che deve avere il torso
+    # per trovarsi dentro la soglia
+    corrected_torso_length = (
         reference_torso_length
         *
         math.cos(
             math.radians(
-                TORSO_INCLINATION_THRESHOLD
+                corrected_inclination
             )
         )
     )
 
 
-    if current_torso_length >= minimum_torso_length:
+    # se per qualche motivo
+    # il torso è già abbastanza lungo
+    # non devo modificarlo
+    if (
+        current_torso_length
+        >=
+        corrected_torso_length
+    ):
+
         return
 
 
+    # mantengo la stessa direzione
+    # del torso ma aumento
+    # la sua lunghezza apparente
     correction_ratio = (
-        minimum_torso_length
+        corrected_torso_length
         /
         current_torso_length
     )
@@ -460,13 +553,18 @@ def _correct_torso_inclination(
     corrected_shoulder_center_x = (
         hip_center.x
         +
-        delta_x * correction_ratio
+        delta_x
+        *
+        correction_ratio
     )
+
 
     corrected_shoulder_center_y = (
         hip_center.y
         +
-        delta_y * correction_ratio
+        delta_y
+        *
+        correction_ratio
     )
 
 
@@ -483,16 +581,20 @@ def _correct_torso_inclination(
     )
 
 
-    # sposto tutta la parte superiore del corpo
-    # per non deformare braccia e spalle
-
+    # sposto tutta la parte superiore
+    # del corpo insieme
+    # per non deformare lo scheletro
     upper_body_points = [
+
         body.landmarks.spalla_sinistra,
         body.landmarks.spalla_destra,
+
         body.landmarks.gomito_sinistro,
         body.landmarks.gomito_destro,
+
         body.landmarks.polso_sinistro,
         body.landmarks.polso_destro,
+
         body.landmarks.naso
     ]
 
@@ -516,6 +618,9 @@ def _correct_torso_inclination(
 # CREATE CORRECTED BODY
 # ----------------------------------------------------
 
+# crea una copia del bodymodel originale
+# e corregge solamente gli errori
+# validati per quel frame
 def create_corrected_body(
     body,
     detected_errors,
@@ -523,16 +628,16 @@ def create_corrected_body(
 ):
 
     # creo una copia del corpo
-    # per non modificare quello originale
-
+    # per non modificare
+    # il bodymodel originale
     corrected_body = deepcopy(
         body
     )
 
 
     # correggo prima il torso
-    # perché può modificare anche spalle e polsi
-
+    # perché sposta anche
+    # spalle, braccia e polsi
     if detected_errors.get(
         "torso_inclination",
         False
@@ -544,9 +649,8 @@ def create_corrected_body(
         )
 
 
-    # convergenza e asimmetria delle ginocchia
-    # possono utilizzare la stessa correzione
-
+    # correggo convergenza
+    # e asimmetria delle ginocchia
     if (
         detected_errors.get(
             "knee_convergence",
@@ -564,6 +668,8 @@ def create_corrected_body(
         )
 
 
+    # correggo l'asimmetria
+    # della posizione dei piedi
     if detected_errors.get(
         "heel_asymmetry",
         False
@@ -574,6 +680,8 @@ def create_corrected_body(
         )
 
 
+    # correggo il sollevamento
+    # dei talloni
     if detected_errors.get(
         "heel_lift",
         False
@@ -586,9 +694,8 @@ def create_corrected_body(
         )
 
 
-    # correggo la posizione del bilanciere
-    # dopo aver sistemato il torso
-
+    # correggo la posizione
+    # verticale del bilanciere
     if detected_errors.get(
         "barbell_position",
         False
@@ -600,8 +707,10 @@ def create_corrected_body(
         )
 
 
-    # per ultimo rendo i polsi alla stessa altezza
-
+    # correggo per ultimo
+    # l'inclinazione del bilanciere
+    # portando i polsi
+    # alla stessa altezza
     if detected_errors.get(
         "barbell_tilt",
         False
@@ -612,6 +721,8 @@ def create_corrected_body(
         )
 
 
+    # aggiorno i punti virtuali
+    # dopo tutte le modifiche
     _update_virtual_points(
         corrected_body
     )
