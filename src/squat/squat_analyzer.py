@@ -466,11 +466,18 @@ class SquatAnalyzer:
         repetition_number
     ):
 
+        # per l'output faccio partire
+        # la numerazione delle ripetizioni da 1
+        output_repetition_number = (
+            repetition_number + 1
+        )
+
+
         print()
 
         print(
-            f"========== RIPETIZIONE "
-            f"{repetition_number} =========="
+            f"RIPETIZIONE "
+            f"{output_repetition_number}"
         )
 
 
@@ -484,22 +491,48 @@ class SquatAnalyzer:
 
         for phase in phases:
 
+            print()
+
+            print(
+                f"- {self._phase_name(phase)}"
+            )
+
+            print()
+
+
+            # se non è stata raggiunta
+            # una profondità sufficiente
+            if (
+                phase == SquatPhase.BOTTOM
+                and
+                self.current_rep.errors.get(
+                    "insufficient_depth",
+                    False
+                )
+            ):
+
+                print(
+                    "La profondità dello squat "
+                    "non è stata sufficiente"
+                )
+
+                continue
+
+
+            # se la fase non è presente
+            # non ci sono errori da stampare
             if phase not in self.rep_phases:
+
+                print(
+                    "Nessun errore"
+                )
+
                 continue
 
 
             phase_data = self.rep_phases[
                 phase
             ]
-
-
-            print()
-
-            print(
-                self._phase_name(
-                    phase
-                )
-            )
 
 
             # se nella fase non sono stati trovati errori
@@ -519,12 +552,17 @@ class SquatAnalyzer:
                 "errors"
             ].items():
 
+                error_text = self._error_name(
+                    error_name
+                )
+
+
                 for start, end in error_ranges:
 
                     if start == end:
 
                         print(
-                            f"- {error_name} | "
+                            f"{error_text} | "
                             f"errore frame {start}"
                         )
 
@@ -532,32 +570,17 @@ class SquatAnalyzer:
                     else:
 
                         print(
-                            f"- {error_name} | "
+                            f"{error_text} | "
                             f"errore frame {start}-{end}"
                         )
-
-
-        # controllo se la ripetizione
-        # non ha raggiunto la profondità sufficiente
-        if self.current_rep.errors.get(
-            "insufficient_depth",
-            False
-        ):
-
-            print()
-
-            print(
-                "- insufficient_depth"
-            )
 
 
         print()
 
         print(
-            f"========== FINE RIPETIZIONE "
-            f"{repetition_number} =========="
+            f"FINE RIPETIZIONE "
+            f"{output_repetition_number}"
         )
-
 
     def _phase_name(
         self,
@@ -566,25 +589,62 @@ class SquatAnalyzer:
 
         if phase == SquatPhase.STANDING:
 
-            return "STANDING"
+            return "POSIZIONAMENTO"
 
 
         elif phase == SquatPhase.DESCENDING:
 
-            return "DESCENDING"
+            return "DISCESA"
 
 
         elif phase == SquatPhase.BOTTOM:
 
-            return "BOTTOM"
+            return "ACCOSCIATA"
 
 
         elif phase == SquatPhase.ASCENDING:
 
-            return "ASCENDING"
+            return "RISALITA"
 
 
         return phase.value
+
+
+    def _error_name(
+        self,
+        error_name
+    ):
+
+        error_names = {
+
+            "barbell_tilt":
+                "Inclinazione del bilanciere",
+
+            "heel_asymmetry":
+                "Asimmetria della posizione dei piedi",
+
+            "knee_asymmetry":
+                "Asimmetria delle ginocchia",
+
+            "barbell_position":
+                "Posizione del bilanciere",
+
+            "knee_convergence":
+                "Valgismo delle ginocchia",
+
+            "heel_lift":
+                "Sollevamento del tallone",
+
+            "torso_inclination":
+                "Inclinazione del busto"
+
+        }
+
+
+        return error_names.get(
+            error_name,
+            error_name
+        )
 
 
     def finish_analysis(self):
@@ -607,9 +667,9 @@ class SquatAnalyzer:
                 print()
 
                 print(
-                    f"========== RIPETIZIONE "
+                    f"RIPETIZIONE "
                     f"{self.current_rep.number} "
-                    f"INCOMPLETA =========="
+                    f"INCOMPLETA"
                 )
 
 

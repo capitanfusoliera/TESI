@@ -13,6 +13,8 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
 
+from imblearn.over_sampling import SMOTE
+
 from src.ml.feature_extractor import extract_repetition_features
 from src.ml.feature_extractor import TARGET_FRAMES
 from src.ml.feature_extractor import LANDMARK_NAMES
@@ -78,6 +80,7 @@ def load_dataset():
             # che non sono ancora state etichettate
             if label not in [
                 "correct",
+                "medium",
                 "wrong"
             ]:
 
@@ -140,6 +143,10 @@ def train_classifier():
         y == "correct"
     )
 
+    medium_count = np.sum(
+        y == "medium"
+    )
+
     wrong_count = np.sum(
         y == "wrong"
     )
@@ -150,16 +157,20 @@ def train_classifier():
     )
 
     print(
+        f"Medium: {medium_count}"
+    )
+
+    print(
         f"Wrong: {wrong_count}"
     )
 
 
-    # devo avere entrambe le classi
-    if len(np.unique(y)) < 2:
+    # devo avere tutte e tre le classi
+    if len(np.unique(y)) < 3:
 
         print(
-            "ERRORE: servono sia squat correct "
-            "che squat wrong"
+            "ERRORE: servono squat correct, "
+            "medium e wrong"
         )
 
         return
@@ -208,9 +219,68 @@ def train_classifier():
 
 
         # controllo che nel training
-        # siano presenti entrambe le classi
+        # siano presenti tutte e tre le classi
 
-        if len(np.unique(y_train)) >= 2:
+        if len(np.unique(y_train)) >= 3:
+
+            # applico SMOTE solamente
+            # al training set
+            smote = SMOTE(
+                sampling_strategy="not majority",
+                random_state=42,
+                k_neighbors=5
+            )
+
+
+            X_train_resampled, y_train_resampled = (
+                smote.fit_resample(
+                    X_train,
+                    y_train
+                )
+            )
+
+
+            print()
+            print(
+                "Distribuzione training prima di SMOTE:"
+            )
+
+            print(
+                f"Correct: "
+                f"{np.sum(y_train == 'correct')}"
+            )
+
+            print(
+                f"Medium: "
+                f"{np.sum(y_train == 'medium')}"
+            )
+
+            print(
+                f"Wrong: "
+                f"{np.sum(y_train == 'wrong')}"
+            )
+
+
+            print()
+            print(
+                "Distribuzione training dopo SMOTE:"
+            )
+
+            print(
+                f"Correct: "
+                f"{np.sum(y_train_resampled == 'correct')}"
+            )
+
+            print(
+                f"Medium: "
+                f"{np.sum(y_train_resampled == 'medium')}"
+            )
+
+            print(
+                f"Wrong: "
+                f"{np.sum(y_train_resampled == 'wrong')}"
+            )
+
 
             test_model = DecisionTreeClassifier(
                 max_depth=5,
@@ -219,8 +289,8 @@ def train_classifier():
 
 
             test_model.fit(
-                X_train,
-                y_train
+                X_train_resampled,
+                y_train_resampled
             )
 
 
@@ -245,6 +315,11 @@ def train_classifier():
                 classification_report(
                     y_test,
                     predictions,
+                    labels=[
+                        "correct",
+                        "medium",
+                        "wrong"
+                    ],
                     zero_division=0
                 )
             )
@@ -256,7 +331,12 @@ def train_classifier():
             print(
                 confusion_matrix(
                     y_test,
-                    predictions
+                    predictions,
+                    labels=[
+                        "correct",
+                        "medium",
+                        "wrong"
+                    ]
                 )
             )
 
@@ -281,6 +361,43 @@ def train_classifier():
 
     # creo il modello finale
     # utilizzando tutti i dati disponibili
+    # aumentati tramite SMOTE
+
+    final_smote = SMOTE(
+        sampling_strategy="not majority",
+        random_state=42,
+        k_neighbors=5
+    )
+
+
+    X_resampled, y_resampled = (
+        final_smote.fit_resample(
+            X,
+            y
+        )
+    )
+
+
+    print()
+    print(
+        "Distribuzione dataset finale dopo SMOTE:"
+    )
+
+    print(
+        f"Correct: "
+        f"{np.sum(y_resampled == 'correct')}"
+    )
+
+    print(
+        f"Medium: "
+        f"{np.sum(y_resampled == 'medium')}"
+    )
+
+    print(
+        f"Wrong: "
+        f"{np.sum(y_resampled == 'wrong')}"
+    )
+
 
     model = DecisionTreeClassifier(
         max_depth=5,
@@ -289,8 +406,8 @@ def train_classifier():
 
 
     model.fit(
-        X,
-        y
+        X_resampled,
+        y_resampled
     )
 
 

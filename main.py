@@ -20,6 +20,7 @@ MODEL_PATH = "models/pose_landmarker_full.task"
 # Indirizzo modello machine learning
 ML_MODEL_PATH = "models/squat_classifier.pkl"
 
+
 def analyze_video(video_path):
 
     #tramite mediaPipe analizzo il video passato per parametro
@@ -185,6 +186,7 @@ def analyze_video(video_path):
     # il video è termintato senza che l'utente sia in stending
     squat_analyzer.finish_analysis()
 
+
     # creo il classificatore machine learning
     ml_classifier = SquatClassifier(
         ML_MODEL_PATH
@@ -192,9 +194,8 @@ def analyze_video(video_path):
 
 
     print()
-    print(
-        "========== CLASSIFICAZIONE MACHINE LEARNING =========="
-    )
+    print("OUTPUT OTTENUTO DAL MACHINE LEARNING")
+    print()
 
 
     # classifico tutte le ripetizioni
@@ -209,22 +210,50 @@ def analyze_video(video_path):
         if prediction is None:
 
             print(
-                f"Ripetizione {repetition.number}: "
-                f"impossibile classificare"
+                f"Ripetizione {repetition.number + 1}: "
+                f"Impossibile classificare"
             )
 
             continue
 
 
+        # trasformo la classificazione
+        # in un messaggio leggibile
+        if prediction == "correct":
+
+            classification_text = (
+                "Squat generalmente corretto"
+            )
+
+
+        elif prediction == "medium":
+
+            classification_text = (
+                "Squat da migliorare"
+            )
+
+
+        elif prediction == "wrong":
+
+            classification_text = (
+                "Squat scorretto"
+            )
+
+
+        else:
+
+            classification_text = (
+                "Classificazione sconosciuta"
+            )
+
+
         print(
-            f"Ripetizione {repetition.number}: "
-            f"{prediction.upper()}"
+            f"Ripetizione {repetition.number + 1}: "
+            f"{classification_text}"
         )
 
 
-    print(
-        "======================================================="
-    )
+    print("")
 
 
     # creo lo scheletro corretto dopo aver
