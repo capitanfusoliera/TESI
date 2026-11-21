@@ -1,7 +1,7 @@
 # controlla che i talloni siano posizionati
 # in maniera abbastanza simmetrica rispetto al centro del bacino
 
-HEEL_ASYMMETRY_THRESHOLD_RATIO = 0.045
+HEEL_ASYMMETRY_THRESHOLD_RATIO = 0.05
 
 
 def check_heel_asymmetry(body, reference_heel_hip_height):

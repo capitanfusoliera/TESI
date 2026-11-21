@@ -6526,7 +6526,7 @@
             "repetition": 1,
             "start_frame": 415,
             "end_frame": 504,
-            "label": "correct",
+            "label": "medium",
             "frames": [
                 {
                     "frame": 415,
@@ -13120,7 +13120,7 @@
             "repetition": 2,
             "start_frame": 573,
             "end_frame": 659,
-            "label": "correct",
+            "label": "medium",
             "frames": [
                 {
                     "frame": 573,
@@ -19492,7 +19492,7 @@
             "repetition": 3,
             "start_frame": 731,
             "end_frame": 825,
-            "label": "correct",
+            "label": "medium",
             "frames": [
                 {
                     "frame": 731,
@@ -26456,7 +26456,7 @@
             "repetition": 4,
             "start_frame": 913,
             "end_frame": 987,
-            "label": "correct",
+            "label": "medium",
             "frames": [
                 {
                     "frame": 913,

@@ -1,7 +1,7 @@
 # controlla che il bilanciere non sia posizionato
 # troppo in alto rispetto alle spalle
 
-BARBELL_POSITION_THRESHOLD_RATIO = 0.02
+BARBELL_POSITION_THRESHOLD_RATIO = 0.022
 
 
 def check_barbell_position(body,reference_body_height):

@@ -6,8 +6,7 @@ import json
 import os
 import joblib
 import numpy as np
-
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GroupShuffleSplit
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report
@@ -220,7 +219,6 @@ def train_classifier():
 
         # controllo che nel training
         # siano presenti tutte e tre le classi
-
         if len(np.unique(y_train)) >= 3:
 
             # applico SMOTE solamente
@@ -282,18 +280,24 @@ def train_classifier():
             )
 
 
-            test_model = DecisionTreeClassifier(
-                max_depth=5,
+            test_model = RandomForestClassifier(
+                n_estimators=200,
+                max_depth=10,
+                class_weight="balanced",
                 random_state=42
             )
 
 
+            # addestro la Random Forest
+            # sui dati aumentati con SMOTE
             test_model.fit(
                 X_train_resampled,
                 y_train_resampled
             )
 
 
+            # il test viene eseguito solamente
+            # sui dati reali
             predictions = test_model.predict(
                 X_test
             )
@@ -362,7 +366,6 @@ def train_classifier():
     # creo il modello finale
     # utilizzando tutti i dati disponibili
     # aumentati tramite SMOTE
-
     final_smote = SMOTE(
         sampling_strategy="not majority",
         random_state=42,
@@ -399,12 +402,17 @@ def train_classifier():
     )
 
 
-    model = DecisionTreeClassifier(
-        max_depth=5,
+    # creo la Random Forest finale
+    model = RandomForestClassifier(
+        n_estimators=200,
+        max_depth=10,
+        class_weight="balanced",
         random_state=42
     )
 
 
+    # addestro il modello finale
+    # sul dataset completo aumentato con SMOTE
     model.fit(
         X_resampled,
         y_resampled

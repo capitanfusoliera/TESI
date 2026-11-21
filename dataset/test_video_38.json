@@ -10308,7 +10308,7 @@
             "repetition": 2,
             "start_frame": 284,
             "end_frame": 353,
-            "label": "wrong",
+            "label": "medium",
             "frames": [
                 {
                     "frame": 284,
@@ -15422,7 +15422,7 @@
             "repetition": 3,
             "start_frame": 402,
             "end_frame": 474,
-            "label": "wrong",
+            "label": "medium",
             "frames": [
                 {
                     "frame": 402,
@@ -20758,7 +20758,7 @@
             "repetition": 4,
             "start_frame": 525,
             "end_frame": 595,
-            "label": "wrong",
+            "label": "medium",
             "frames": [
                 {
                     "frame": 525,

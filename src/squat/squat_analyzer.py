@@ -18,6 +18,11 @@ class SquatAnalyzer:
         # anche l'analisi deterministica degli errori
         self.analyze_errors = analyze_errors
 
+        # errori temporaneamente disattivati
+        self.disabled_errors = {
+            "heel_lift"
+        }
+
         self.current_phase = SquatPhase.STANDING
         self.current_rep = None
 
@@ -35,12 +40,13 @@ class SquatAnalyzer:
 
         #conta quanti frame contigui servono per dichiare un errore errore
         self.min_error_frames = {
-            "knee_convergence": 6,
+            "knee_convergence": 4,
             "heel_lift": 1,
-            "heel_asymmetry": 6,
-            "knee_asymmetry": 6,
-            "barbell_position": 6,
-            "torso_inclination": 6
+            "heel_asymmetry": 4,
+            "knee_asymmetry":4,
+            "barbell_position": 4,
+            "torso_inclination": 4,
+            "barbell_tilt": 4
         }
 
         # contiene i risultati delle varie fasi
@@ -154,6 +160,15 @@ class SquatAnalyzer:
                 phase=self.current_phase
             )
 
+            # disattivo gli errori
+            # che non voglio considerare
+            for error_name in self.disabled_errors:
+
+                if error_name in detected_errors:
+
+                    detected_errors[
+                        error_name
+                    ] = False
 
             # salvo errori e frame
             # della fase attuale

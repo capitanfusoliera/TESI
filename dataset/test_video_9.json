@@ -6,7 +6,7 @@
             "repetition": 0,
             "start_frame": 132,
             "end_frame": 323,
-            "label": "correct",
+            "label": "medium",
             "frames": [
                 {
                     "frame": 132,
@@ -14148,7 +14148,7 @@
             "repetition": 1,
             "start_frame": 492,
             "end_frame": 649,
-            "label": "correct",
+            "label": "medium",
             "frames": [
                 {
                     "frame": 492,
