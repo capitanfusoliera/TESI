@@ -52,6 +52,19 @@ class SquatAnalyzer:
         # contiene i risultati delle varie fasi
         self.rep_phases = {}
 
+        # visibility minima accettata
+        # per tutti i marker utilizzati
+        self.min_landmark_visibility = 0.50
+
+        # numero minimo di frame
+        # con visibility troppo bassa
+        # per invalidare la ripetizione
+        self.min_low_visibility_frames = 6
+
+        # conta i frame della ripetizione
+        # con almeno un marker poco affidabile
+        self.low_visibility_frames = 0
+
 
     def update(self, body):
 
@@ -195,6 +208,39 @@ class SquatAnalyzer:
             )
 
 
+            # controllo la visibility
+            # di tutti i marker utilizzati
+            landmarks_to_check = [
+                body.landmarks.naso,
+                body.landmarks.spalla_sinistra,
+                body.landmarks.spalla_destra,
+                body.landmarks.gomito_sinistro,
+                body.landmarks.gomito_destro,
+                body.landmarks.polso_sinistro,
+                body.landmarks.polso_destro,
+                body.landmarks.anca_sinistra,
+                body.landmarks.anca_destra,
+                body.landmarks.ginocchio_sinistro,
+                body.landmarks.ginocchio_destro,
+                body.landmarks.caviglia_sinistra,
+                body.landmarks.caviglia_destra,
+                body.landmarks.tallone_sinistro,
+                body.landmarks.tallone_destro,
+                body.landmarks.avampiede_sinistro,
+                body.landmarks.avampiede_destro
+            ]
+
+
+            if any(
+                landmark.visibility
+                <
+                self.min_landmark_visibility
+                for landmark in landmarks_to_check
+            ):
+
+                self.low_visibility_frames += 1
+
+
             # aggiorno gli errori solamente
             # durante l'analisi deterministica
             if self.analyze_errors:
@@ -216,6 +262,10 @@ class SquatAnalyzer:
             number=self.rep_count,
             start_frame=frame_number
         )
+
+        # azzero il conteggio dei frame
+        # con visibility bassa
+        self.low_visibility_frames = 0
 
 
         # aggiungo alla ripetizione anche eventuali errori
@@ -240,6 +290,66 @@ class SquatAnalyzer:
     ):
 
         self.current_rep.end_frame = frame_number
+
+
+        # se troppi frame hanno almeno
+        # un marker con visibility bassa
+        # la ripetizione non viene valutata
+        if (
+            self.low_visibility_frames
+            >=
+            self.min_low_visibility_frames
+        ):
+
+            # elimino eventuali errori validati
+            # appartenenti alla ripetizione non affidabile
+            frames_to_remove = [
+                frame
+                for frame in self.validated_errors_by_frame
+                if (
+                    self.current_rep.start_frame
+                    <=
+                    frame
+                    <=
+                    self.current_rep.end_frame
+                )
+            ]
+
+
+            for frame in frames_to_remove:
+
+                del self.validated_errors_by_frame[
+                    frame
+                ]
+
+
+            print()
+
+            print(
+                "RIPETIZIONE NON VALUTATA"
+            )
+
+            print()
+
+            print(
+                "Rilevamento dei marker "
+                "non sufficientemente affidabile"
+            )
+
+            print(
+                f"Frame con visibility inferiore "
+                f"a {self.min_landmark_visibility:.2f}: "
+                f"{self.low_visibility_frames}"
+            )
+
+
+            self.current_rep = None
+
+            self.rep_phases = {}
+
+            self.low_visibility_frames = 0
+
+            return
 
 
         # salvo la ripetizione completata
@@ -268,6 +378,8 @@ class SquatAnalyzer:
         # preparo i risultati
         # per la prossima ripetizione
         self.rep_phases = {}
+
+        self.low_visibility_frames = 0
 
 
     def _update_errors(

@@ -24,6 +24,43 @@ DATASET_PATH = "dataset"
 MODEL_PATH = "models/squat_classifier.pkl"
 
 
+# associa i video appartenenti
+# allo stesso partecipante
+PARTICIPANT_GROUPS = {
+
+    # persona 1
+    "test_video_36.mp4": "participant_1",
+    "test_video_sbagliato_3.mp4": "participant_1",
+    "test_video_11.mp4": "participant_1",
+
+    # persona 2
+    "test_video_sbagliato_4.mp4": "participant_2",
+    "test_video_37.mp4": "participant_2",
+
+    # persona 3
+    "test_video_sbagliato_2.mp4": "participant_3",
+    "test_video_corretto_1.mp4": "participant_3",
+    "test_video_30.mp4": "participant_3",
+
+    # persona 4
+    "test_video_sbagliato_giusto_1.mp4": "participant_4",
+    "test_video_24.mp4": "participant_4",
+
+    # persona 5
+    "test_video_sbagliato_1.mp4": "participant_5",
+    "test_video_32.mp4": "participant_5",
+
+    # persona 6
+    "test_video_60.mp4": "participant_6",
+    "test_video_51.mp4": "participant_6",
+
+    # persona 7
+    "test_video_64.mp4": "participant_7",
+    "test_video_55.mp4": "participant_7"
+
+}
+
+
 
 # carica tutti i json presenti
 # dentro la cartella dataset
@@ -66,6 +103,16 @@ def load_dataset():
         ]
 
 
+        # se il video appartiene
+        # ad una persona presente
+        # anche in altri video
+        # utilizzo lo stesso gruppo
+        participant_group = PARTICIPANT_GROUPS.get(
+            video_name,
+            video_name
+        )
+
+
         for repetition in video_data[
             "repetitions"
         ]:
@@ -103,10 +150,12 @@ def load_dataset():
                 label
             )
 
-            # salvo anche il video di provenienza
+
+            # salvo il partecipante
+            # di provenienza
             # per separare training e test
             groups.append(
-                video_name
+                participant_group
             )
 
 
@@ -124,6 +173,7 @@ def train_classifier():
 
 
     print()
+
     print(
         f"Ripetizioni disponibili: {len(X)}"
     )
@@ -175,14 +225,22 @@ def train_classifier():
         return
 
 
-    unique_videos = np.unique(
+    unique_participants = np.unique(
         groups
     )
 
 
-    # se ho abbastanza video
+    print()
+
+    print(
+        f"Partecipanti/gruppi disponibili: "
+        f"{len(unique_participants)}"
+    )
+
+
+    # se ho abbastanza partecipanti
     # creo training set e test set
-    if len(unique_videos) >= 3:
+    if len(unique_participants) >= 3:
 
         splitter = GroupShuffleSplit(
             n_splits=1,
@@ -217,6 +275,59 @@ def train_classifier():
         ]
 
 
+        # recupero i partecipanti
+        # presenti nei due insiemi
+        train_participants = set(
+            groups[
+                train_indexes
+            ]
+        )
+
+        test_participants = set(
+            groups[
+                test_indexes
+            ]
+        )
+
+
+        participants_in_both = (
+            train_participants.intersection(
+                test_participants
+            )
+        )
+
+
+        print()
+
+        print(
+            f"Partecipanti training: "
+            f"{len(train_participants)}"
+        )
+
+        print(
+            f"Partecipanti test: "
+            f"{len(test_participants)}"
+        )
+
+        print(
+            f"Partecipanti presenti in entrambi: "
+            f"{len(participants_in_both)}"
+        )
+
+
+        print()
+
+        print(
+            f"Ripetizioni training: "
+            f"{len(X_train)}"
+        )
+
+        print(
+            f"Ripetizioni test: "
+            f"{len(X_test)}"
+        )
+
+
         # controllo che nel training
         # siano presenti tutte e tre le classi
         if len(np.unique(y_train)) >= 3:
@@ -239,6 +350,7 @@ def train_classifier():
 
 
             print()
+
             print(
                 "Distribuzione training prima di SMOTE:"
             )
@@ -260,6 +372,7 @@ def train_classifier():
 
 
             print()
+
             print(
                 "Distribuzione training dopo SMOTE:"
             )
@@ -304,6 +417,7 @@ def train_classifier():
 
 
             print()
+
             print(
                 "========== RISULTATI TEST =========="
             )
@@ -314,6 +428,7 @@ def train_classifier():
             )
 
             print()
+
 
             print(
                 classification_report(
@@ -327,6 +442,7 @@ def train_classifier():
                     zero_division=0
                 )
             )
+
 
             print(
                 "Confusion matrix:"
@@ -348,6 +464,7 @@ def train_classifier():
         else:
 
             print()
+
             print(
                 "Dataset ancora troppo piccolo "
                 "per effettuare un test affidabile"
@@ -357,6 +474,7 @@ def train_classifier():
     else:
 
         print()
+
         print(
             "Dataset ancora troppo piccolo "
             "per separare training e test"
@@ -382,6 +500,7 @@ def train_classifier():
 
 
     print()
+
     print(
         "Distribuzione dataset finale dopo SMOTE:"
     )
@@ -443,6 +562,7 @@ def train_classifier():
 
 
     print()
+
     print(
         "========== TRAINING COMPLETATO =========="
     )
