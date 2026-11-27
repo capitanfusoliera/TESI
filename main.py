@@ -302,13 +302,6 @@ def analyze_video(video_path):
             )
 
 
-        elif prediction == "medium":
-
-            classification_text = (
-                "Squat da migliorare"
-            )
-
-
         elif prediction == "wrong":
 
             classification_text = (

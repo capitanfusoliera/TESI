@@ -54,7 +54,7 @@ class SquatAnalyzer:
 
         # visibility minima accettata
         # per tutti i marker utilizzati
-        self.min_landmark_visibility = 0.50
+        self.min_landmark_visibility = 0.60
 
         # numero minimo di frame
         # con visibility troppo bassa
@@ -323,10 +323,19 @@ class SquatAnalyzer:
                 ]
 
 
+            # per l'output faccio partire
+            # la numerazione delle ripetizioni da 1
+            output_repetition_number = (
+                self.current_rep.number + 1
+            )
+
+
             print()
 
             print(
-                "RIPETIZIONE NON VALUTATA"
+                f"RIPETIZIONE "
+                f"{output_repetition_number} "
+                f"NON CONTEGGIATA"
             )
 
             print()
@@ -341,6 +350,12 @@ class SquatAnalyzer:
                 f"a {self.min_landmark_visibility:.2f}: "
                 f"{self.low_visibility_frames}"
             )
+
+
+            # aumento comunque il counter
+            # per mantenere la numerazione reale
+            # delle ripetizioni nel video
+            self.rep_count += 1
 
 
             self.current_rep = None
@@ -463,14 +478,14 @@ class SquatAnalyzer:
                 # appartenenti agli intervalli validati
                 for frame_number, errors in self.phase_frames:
 
-                    for start_frame, end_frame in error_ranges:
+                    for error_start_frame, error_end_frame in error_ranges:
 
                         if (
-                            start_frame
+                            error_start_frame
                             <=
                             frame_number
                             <=
-                            end_frame
+                            error_end_frame
                         ):
 
                             if (
@@ -795,7 +810,7 @@ class SquatAnalyzer:
 
                 print(
                     f"RIPETIZIONE "
-                    f"{self.current_rep.number} "
+                    f"{self.current_rep.number + 1} "
                     f"INCOMPLETA"
                 )
 

@@ -6,7 +6,7 @@
             "repetition": 0,
             "start_frame": 120,
             "end_frame": 284,
-            "label": "correct",
+            "label": "medium",
             "frames": [
                 {
                     "frame": 120,
@@ -12150,7 +12150,7 @@
             "repetition": 1,
             "start_frame": 449,
             "end_frame": 611,
-            "label": "correct",
+            "label": "medium",
             "frames": [
                 {
                     "frame": 449,
@@ -24146,7 +24146,7 @@
             "repetition": 2,
             "start_frame": 744,
             "end_frame": 922,
-            "label": "correct",
+            "label": "medium",
             "frames": [
                 {
                     "frame": 744,
@@ -37326,7 +37326,7 @@
             "repetition": 3,
             "start_frame": 1092,
             "end_frame": 1275,
-            "label": "correct",
+            "label": "medium",
             "frames": [
                 {
                     "frame": 1092,
@@ -50876,7 +50876,7 @@
             "repetition": 4,
             "start_frame": 1429,
             "end_frame": 1625,
-            "label": "correct",
+            "label": "medium",
             "frames": [
                 {
                     "frame": 1429,

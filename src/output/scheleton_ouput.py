@@ -53,7 +53,7 @@ def _get_midpoint(landmarks,point_a,point_b):
 
     return (int((a[0] + b[0]) / 2),int((a[1] + b[1]) / 2))
 
-#PERCHE' 
+# disegno la linea centrale del tronco
 def _draw_trunk_center_line(frame,landmarks,color,thickness=3):
 
     shoulder_center = _get_midpoint(landmarks,"spalla_sinistra","spalla_destra")

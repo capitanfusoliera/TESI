@@ -12816,7 +12816,7 @@
             "repetition": 1,
             "start_frame": 1318,
             "end_frame": 1463,
-            "label": "medium",
+            "label": "correct",
             "frames": [
                 {
                     "frame": 1318,
@@ -23554,7 +23554,7 @@
             "repetition": 2,
             "start_frame": 1633,
             "end_frame": 1792,
-            "label": "medium",
+            "label": "correct",
             "frames": [
                 {
                     "frame": 1633,
@@ -35328,7 +35328,7 @@
             "repetition": 3,
             "start_frame": 1924,
             "end_frame": 2064,
-            "label": "medium",
+            "label": "correct",
             "frames": [
                 {
                     "frame": 1924,

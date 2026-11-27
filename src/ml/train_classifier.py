@@ -32,6 +32,9 @@ PARTICIPANT_GROUPS = {
     "test_video_36.mp4": "participant_1",
     "test_video_sbagliato_3.mp4": "participant_1",
     "test_video_11.mp4": "participant_1",
+    "test_corretto_2.mp4": "participant_1",
+    "test_corretto_3.mp4": "participant_1",
+    "test_corretto_4.mp4": "participant_1",
 
     # persona 2
     "test_video_sbagliato_4.mp4": "participant_2",
@@ -56,7 +59,15 @@ PARTICIPANT_GROUPS = {
 
     # persona 7
     "test_video_64.mp4": "participant_7",
-    "test_video_55.mp4": "participant_7"
+    "test_video_55.mp4": "participant_7",
+
+    # persona 8
+    "test_video_27.mp4": "participant_8",
+    "test_video_scorretto_6.mp4": "participant_8",
+
+    # persona 9
+    "test_video_14.mp4": "participant_9",
+    "test_video_scorretto_5.mp4": "participant_9"
 
 }
 
@@ -133,6 +144,12 @@ def load_dataset():
                 continue
 
 
+            # considero tutti gli squat medium come correct
+            if label == "medium":
+
+                label = "wrong"
+
+
             features = extract_repetition_features(
                 repetition
             )
@@ -192,10 +209,6 @@ def train_classifier():
         y == "correct"
     )
 
-    medium_count = np.sum(
-        y == "medium"
-    )
-
     wrong_count = np.sum(
         y == "wrong"
     )
@@ -206,20 +219,16 @@ def train_classifier():
     )
 
     print(
-        f"Medium: {medium_count}"
-    )
-
-    print(
         f"Wrong: {wrong_count}"
     )
 
 
-    # devo avere tutte e tre le classi
-    if len(np.unique(y)) < 3:
+    # devo avere entrambe le classi
+    if len(np.unique(y)) < 2:
 
         print(
-            "ERRORE: servono squat correct, "
-            "medium e wrong"
+            "ERRORE: servono squat correct "
+            "e wrong"
         )
 
         return
@@ -329,8 +338,8 @@ def train_classifier():
 
 
         # controllo che nel training
-        # siano presenti tutte e tre le classi
-        if len(np.unique(y_train)) >= 3:
+        # siano presenti entrambe le classi
+        if len(np.unique(y_train)) >= 2:
 
             # applico SMOTE solamente
             # al training set
@@ -361,11 +370,6 @@ def train_classifier():
             )
 
             print(
-                f"Medium: "
-                f"{np.sum(y_train == 'medium')}"
-            )
-
-            print(
                 f"Wrong: "
                 f"{np.sum(y_train == 'wrong')}"
             )
@@ -380,11 +384,6 @@ def train_classifier():
             print(
                 f"Correct: "
                 f"{np.sum(y_train_resampled == 'correct')}"
-            )
-
-            print(
-                f"Medium: "
-                f"{np.sum(y_train_resampled == 'medium')}"
             )
 
             print(
@@ -436,7 +435,6 @@ def train_classifier():
                     predictions,
                     labels=[
                         "correct",
-                        "medium",
                         "wrong"
                     ],
                     zero_division=0
@@ -454,7 +452,6 @@ def train_classifier():
                     predictions,
                     labels=[
                         "correct",
-                        "medium",
                         "wrong"
                     ]
                 )
@@ -508,11 +505,6 @@ def train_classifier():
     print(
         f"Correct: "
         f"{np.sum(y_resampled == 'correct')}"
-    )
-
-    print(
-        f"Medium: "
-        f"{np.sum(y_resampled == 'medium')}"
     )
 
     print(

@@ -503,10 +503,9 @@ def _correct_torso_inclination(
         return
 
 
-    # la soglia dell'errore è 50 gradi
-    # porto il torso a 45 gradi
-    # in modo da stare dentro
-    # il range corretto
+    # porto il torso 5 gradi sotto
+    # la soglia utilizzata per il controllo
+    # dell'errore
     corrected_inclination = (
         TORSO_INCLINATION_THRESHOLD
         -
